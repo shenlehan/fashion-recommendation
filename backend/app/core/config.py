@@ -1,21 +1,9 @@
 from pydantic_settings import BaseSettings
-import os
+from typing import List
 
-class Config(BaseSettings):
-    """Configuration class for the backend application."""
-    
-    # Database configuration
-    DATABASE_URI: str = os.getenv('DATABASE_URI', 'sqlite:///fashion_recommendation.db')
+class Settings(BaseSettings):
+    PROJECT_NAME: str = "Fashion Recommendation"
+    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000"]  # 前端地址
+    DATABASE_URL: str = "sqlite:///./fashion.db"
 
-    # API keys and other secrets
-    WEATHER_API_KEY: str = os.getenv('WEATHER_API_KEY', 'your_openweathermap_api_key')
-
-    # Other configurations
-    DEBUG: bool = os.getenv('DEBUG', 'False') == 'True'
-    SECRET_KEY: str = os.getenv('SECRET_KEY', 'your_secret_key_here')
-
-    class Config:
-        env_file = ".env"
-
-
-config = Config()
+settings = Settings()

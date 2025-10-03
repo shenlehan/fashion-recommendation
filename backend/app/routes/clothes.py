@@ -1,39 +1,50 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
-from typing import List
-from app.models.wardrobe import Wardrobe
-from app.services.image_service import process_image
-from app.core.database import get_db
+"""
+衣物路由
+职责：处理衣物上传、获取衣橱列表
+与前端交互接口：
+- POST /api/v1/clothes/upload (multipart/form-data)
+- GET /api/v1/clothes/wardrobe
+与 ML 模块交互：调用图像识别服务
+"""
+from fastapi import APIRouter, Depends, UploadFile, File
 from sqlalchemy.orm import Session
+from app.core.database import get_db
+from app.services.image_service import analyze_clothing_image
+from app.models.wardrobe import WardrobeItem
 
 router = APIRouter()
 
-@router.post("/clothes/upload")
-async def upload_clothes(file: UploadFile = File(...), db: Session = next(get_db())):
-    if not file.content_type.startswith('image/'):
-        raise HTTPException(status_code=400, detail="File type not supported. Please upload an image.")
-    
-    # Process the uploaded image
-    clothing_item = process_image(file)
-    
-    # Save clothing item to the database
-    db.add(clothing_item)
-    db.commit()
-    db.refresh(clothing_item)
-    
-    return {"message": "Clothing item uploaded successfully", "item_id": clothing_item.id}
+@router.post("/upload")
+def upload_clothing(
+    user_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
 
-@router.get("/clothes/")
-async def get_clothes(db: Session = next(get_db())):
-    clothes = db.query(Wardrobe).all()
-    return clothes
+    import os
+    upload_dir = "uploads"
+    os.makedirs(upload_dir, exist_ok=True)
+    file_path = os.path.join(upload_dir, file.filename)
+    with open(file_path, "wb") as f:
+        f.write(file.file.read())
 
-@router.delete("/clothes/{item_id}")
-async def delete_clothes(item_id: int, db: Session = next(get_db())):
-    clothing_item = db.query(Wardrobe).filter(Wardrobe.id == item_id).first()
-    if clothing_item is None:
-        raise HTTPException(status_code=404, detail="Clothing item not found.")
-    
-    db.delete(clothing_item)
+    attributes = analyze_clothing_image(file_path)
+
+    db_item = WardrobeItem(
+        user_id=user_id,
+        name=file.filename,
+        category=attributes["category"],
+        color=attributes["color"],
+        season=",".join(attributes["season"]),
+        material=attributes.get("material", ""),
+        image_path=file_path
+    )
+    db.add(db_item)
     db.commit()
-    
-    return {"message": "Clothing item deleted successfully"}
+    db.refresh(db_item)
+    return {"message": "衣物上传成功", "item_id": db_item.id}
+
+@router.get("/wardrobe")
+def get_wardrobe(user_id: int, db: Session = Depends(get_db)):
+    items = db.query(WardrobeItem).filter(WardrobeItem.user_id == user_id).all()
+    return items

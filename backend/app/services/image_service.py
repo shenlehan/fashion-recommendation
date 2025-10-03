@@ -1,66 +1,31 @@
-from PIL import Image
-import io
-import numpy as np
+"""
+图像识别服务
+职责：调用 ML 模型分析衣物图片，返回结构化属性
+与 ML 模块交互：调用 ml.inference.predict()
+返回格式：{
+    "category": "top",
+    "color": "blue",
+    "season": ["spring", "summer"],
+    "material": "cotton"
+}
+"""
+from typing import Dict, Any
 
-def process_image(image_file):
+def analyze_clothing_image(image_path: str) -> Dict[str, Any]:
     """
-    Process the uploaded clothing image.
-    
-    Args:
-        image_file: The uploaded image file.
-        
-    Returns:
-        A numpy array representing the processed image.
+    预留接口：调用 ML 模型识别衣物
+    开发阶段返回 mock 数据，生产环境调用真实模型
     """
-    # Open the image file
-    image = Image.open(image_file)
-    
-    # Resize the image to a standard size (e.g., 224x224)
-    image = image.resize((224, 224))
-    
-    # Convert the image to a numpy array
-    image_array = np.array(image)
-    
-    # Normalize the image data to [0, 1]
-    image_array = image_array / 255.0
-    
-    return image_array
-
-def analyze_image(image_array):
-    """
-    Analyze the clothing image to extract features.
-    
-    Args:
-        image_array: A numpy array representing the processed image.
-        
-    Returns:
-        A dictionary containing extracted features (e.g., color, type).
-    """
-    # Placeholder for feature extraction logic
-    # For example, you could use a pre-trained model to extract features
-    features = {
-        'color': 'red',  # Example feature
-        'type': 'shirt'  # Example feature
-    }
-    
-    return features
-
-def save_image(image_file, user_id):
-    """
-    Save the uploaded image to the server.
-    
-    Args:
-        image_file: The uploaded image file.
-        user_id: The ID of the user uploading the image.
-        
-    Returns:
-        The file path where the image is saved.
-    """
-    # Define the path to save the image
-    file_path = f'uploads/{user_id}/{image_file.filename}'
-    
-    # Save the image file
-    with open(file_path, 'wb') as f:
-        f.write(image_file.read())
-    
-    return file_path
+    try:
+        # 假设 ml 模块已实现
+        from ml.inference import predict
+        result = predict(image_path)
+        return result
+    except ImportError:
+        # 开发阶段 mock 返回
+        return {
+            "category": "top",
+            "color": "blue",
+            "season": ["spring", "summer"],
+            "material": "cotton"
+        }
