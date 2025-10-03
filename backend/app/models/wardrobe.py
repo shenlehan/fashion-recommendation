@@ -7,7 +7,7 @@ class WardrobeItem(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    name = Column(String, nullable=False)  # e.g., "蓝色T恤"
+    name = Column(String, nullable=False)      # e.g., "蓝色T恤"
     category = Column(String, nullable=False)  # e.g., "top", "bottom", "outerwear"
     color = Column(String, nullable=False)     # e.g., "blue"
     season = Column(String, nullable=False)    # e.g., "spring,summer"

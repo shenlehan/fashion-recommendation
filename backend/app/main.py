@@ -10,7 +10,6 @@ from app.core.database import Base, engine
 from app.models.user import User
 from app.models.wardrobe import WardrobeItem
 
-# 创建数据库表
 print("正在创建数据库表...")
 Base.metadata.create_all(bind=engine)
 print("数据库表创建完成！")
@@ -21,7 +20,6 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# 配置 CORS（允许前端跨域请求）
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.BACKEND_CORS_ORIGINS,
@@ -30,7 +28,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 延迟导入路由，避免循环导入和数据库初始化问题
 from app.routes import users, clothes, recommendation
 
 app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
