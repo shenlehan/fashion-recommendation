@@ -10,9 +10,9 @@ from app.core.database import Base, engine
 from app.models.user import User
 from app.models.wardrobe import WardrobeItem
 
-print("正在创建数据库表...")
+print("Creating Database..")
 Base.metadata.create_all(bind=engine)
-print("数据库表创建完成！")
+print("Completed!")
 
 app = FastAPI(
     title="Fashion Recommendation API",

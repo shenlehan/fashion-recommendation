@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.user import User
-from app.schemas.user import UserCreate, UserResponse
+from app.schemas.user import UserCreate, UserLogin, UserResponse
 
 router = APIRouter()
 
@@ -35,6 +35,18 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_user)
     return db_user
+
+@router.post("/login", response_model=UserResponse)
+def login_user(credentials: UserLogin, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == credentials.username).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="用户不存在")
+
+    # Note: Password is stored as plaintext (security issue)
+    if user.hashed_password != credentials.password:
+        raise HTTPException(status_code=401, detail="密码错误")
+
+    return user
 
 @router.get("/profile", response_model=UserResponse)
 def get_user_profile(user_id: int, db: Session = Depends(get_db)):

@@ -12,6 +12,10 @@ class UserCreate(BaseModel):
     body_type: str = None
     city: str = None
 
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
 class UserResponse(BaseModel):
     id: int
     username: str

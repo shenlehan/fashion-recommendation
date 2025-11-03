@@ -8,18 +8,15 @@ from app.models.wardrobe import WardrobeItem
 def init_database():
     print("Creating database...")
     try:
-        # 创建所有表
         Base.metadata.create_all(bind=engine)
         print("Completed!")
         print("Created：fashion.db")
         
-        # 检查表是否创建成功
         from sqlalchemy import inspect
         inspector = inspect(engine)
         tables = inspector.get_table_names()
         print(f"Current tables：{tables}")
         
-        # 检查是否有 users 表
         if 'users' in tables:
             print("users already exists!")
         else:

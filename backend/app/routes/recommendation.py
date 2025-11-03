@@ -6,8 +6,9 @@
 - GET /api/v1/recommend/missing
 与推荐模块交互：调用推荐算法
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from typing import Optional
 from app.core.database import get_db
 from app.services.weather_api import get_weather_by_city
 from app.services.recommendation_service import generate_outfit_recommendations
@@ -17,7 +18,13 @@ from app.models.wardrobe import WardrobeItem
 router = APIRouter()
 
 @router.get("/outfits")
-def get_outfit_recommendations(user_id: int, db: Session = Depends(get_db)):
+def get_outfit_recommendations(
+    user_id: int,
+    occasion: Optional[str] = Query(None),
+    style: Optional[str] = Query(None),
+    color_preference: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
     # 获取用户信息
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -27,15 +34,26 @@ def get_outfit_recommendations(user_id: int, db: Session = Depends(get_db)):
     wardrobe_list = [
         {
             "id": item.id,
+            "name": item.name,
             "category": item.category,
             "color": item.color,
-            "season": item.season.split(","),
-            "material": item.material
+            "season": item.season,
+            "material": item.material,
+            "image_path": item.image_path
         }
         for item in wardrobe
     ]
 
     weather = get_weather_by_city(user.city)
+
+    # Collect user preferences if provided
+    preferences = {}
+    if occasion:
+        preferences["occasion"] = occasion
+    if style:
+        preferences["style"] = style
+    if color_preference:
+        preferences["color_preference"] = color_preference
 
     result = generate_outfit_recommendations(
         user_profile={
@@ -44,6 +62,13 @@ def get_outfit_recommendations(user_id: int, db: Session = Depends(get_db)):
             "city": user.city
         },
         wardrobe_items=wardrobe_list,
-        weather=weather
+        weather=weather,
+        preferences=preferences if preferences else None
     )
-    return result
+
+    # Format response for frontend
+    return {
+        "weather": weather,
+        "outfits": result.get("outfits", []),
+        "missing_items": result.get("missing_items", [])
+    }
