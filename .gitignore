@@ -116,3 +116,9 @@ $RECYCLE.BIN/
 *.temp
 tmp/
 temp/
+
+# Claude Code
+.claude/
+.claude_code/
+claude_session/
+*.claude_session
