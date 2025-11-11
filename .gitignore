@@ -122,3 +122,4 @@ temp/
 .claude_code/
 claude_session/
 *.claude_session
+CLAUDE.md
