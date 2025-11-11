@@ -1,0 +1,79 @@
+# LoRA Fine-tuning Configuration for Qwen2-VL-7B
+
+# Model Configuration
+model:
+  name: "Qwen/Qwen2-VL-7B-Instruct"
+  cache_dir: "~/.cache/huggingface/hub"
+  device: "auto"  # auto, cuda, cpu
+  torch_dtype: "bfloat16"  # bfloat16, float16, float32
+  load_in_4bit: true  # Use 4-bit quantization to save memory
+  load_in_8bit: false  # Alternative to 4-bit (uses more memory)
+
+# LoRA Configuration
+lora:
+  r: 16  # Rank (higher = more capacity, more memory). Try: 8, 16, 32, 64
+  lora_alpha: 32  # Scaling factor (typically 2x of r)
+  target_modules:  # Which modules to apply LoRA to
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+  lora_dropout: 0.05  # Dropout for LoRA layers
+  bias: "none"  # Options: none, all, lora_only
+  task_type: "CAUSAL_LM"
+
+# Training Configuration
+training:
+  output_dir: "../lora_adapters"
+  num_train_epochs: 3
+  per_device_train_batch_size: 1  # Reduce if OOM
+  gradient_accumulation_steps: 4  # Effective batch size = batch_size * grad_accum
+  learning_rate: 2.0e-4  # Standard for LoRA
+  warmup_steps: 100
+  logging_steps: 10
+  save_steps: 100
+  save_total_limit: 3  # Keep only 3 best checkpoints
+  fp16: false  # Use float16 (not compatible with bfloat16)
+  bf16: true   # Use bfloat16 (recommended for modern GPUs)
+  optim: "paged_adamw_8bit"  # Memory-efficient optimizer
+  max_grad_norm: 1.0
+  weight_decay: 0.01
+
+# Data Configuration
+data:
+  train_file: "../training_data/training_data.json"
+  validation_split: 0.1  # Use 10% for validation
+  max_seq_length: 2048  # Maximum sequence length
+  preprocessing_num_workers: 4
+
+# Logging Configuration
+logging:
+  use_wandb: false  # Set to true to use Weights & Biases
+  use_tensorboard: true
+  project_name: "fashion-recommendation-lora"
+  run_name: "qwen2vl-7b-fashion"
+
+# Generation Configuration (for evaluation)
+generation:
+  max_new_tokens: 512
+  temperature: 0.7
+  top_p: 0.9
+  do_sample: true
+
+# Hardware Configuration
+hardware:
+  # GPU settings
+  gpu_memory_fraction: 0.9  # Use 90% of GPU memory
+  mixed_precision: "bf16"  # bf16, fp16, no
+
+  # CPU fallback
+  cpu_threads: 8  # Number of CPU threads if using CPU
+
+# Advanced Settings
+advanced:
+  gradient_checkpointing: true  # Reduce memory usage
+  use_reentrant: false  # Gradient checkpointing mode
+  ddp_find_unused_parameters: false  # For multi-GPU training

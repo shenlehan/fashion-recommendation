@@ -1,0 +1,39 @@
+[
+  {
+    "task_type": "clothing_analysis",
+    "image_path": "path/to/clothing_image.jpg",
+    "instruction": "Analyze this clothing item and provide detailed information about its category, color, season suitability, and material.",
+    "output": {
+      "category": "shirt",
+      "color": "navy blue",
+      "season": ["spring", "fall"],
+      "material": "cotton",
+      "style": "casual",
+      "reasoning": "This is a casual navy blue cotton shirt suitable for transitional seasons due to its medium weight fabric."
+    }
+  },
+  {
+    "task_type": "outfit_recommendation",
+    "instruction": "Based on the following information, suggest 3 complete outfit combinations:\n\nUser Profile:\n- Body Type: athletic\n- City: New York\n\nWardrobe:\n- Item 1: White T-shirt (cotton, casual)\n- Item 2: Blue Jeans (denim, casual)\n- Item 3: Black Leather Jacket (leather, fall/winter)\n- Item 4: Sneakers (athletic, all seasons)\n\nWeather: 15°C, partly cloudy\n\nPreferences:\n- Occasion: casual outing\n- Style: streetwear\n- Color Preference: neutral",
+    "output": {
+      "outfits": [
+        {
+          "items": ["White T-shirt", "Blue Jeans", "Black Leather Jacket", "Sneakers"],
+          "description": "Classic streetwear look perfect for cool weather",
+          "reasoning": "The leather jacket provides warmth for 15°C weather while maintaining a casual streetwear aesthetic. The white tee and blue jeans are timeless basics that work well with an athletic build."
+        }
+      ],
+      "missing_items": [
+        {
+          "category": "hoodie",
+          "reason": "A hoodie would add layering options and enhance the streetwear style"
+        }
+      ]
+    }
+  },
+  {
+    "task_type": "style_advice",
+    "instruction": "Provide style advice for an athletic body type wearing business casual for an office setting.",
+    "output": "For athletic body types in business casual settings:\n\n1. **Fit**: Choose fitted (not tight) shirts that highlight your proportions without being restrictive\n2. **Layering**: Sport coats and blazers work well to add structure\n3. **Bottoms**: Chinos or dress pants in neutral colors\n4. **Colors**: Navy, gray, and earth tones are versatile\n5. **Avoid**: Overly baggy clothes that hide your build\n\nKey tip: Ensure proper shoulder fit in jackets to complement your frame."
+  }
+]

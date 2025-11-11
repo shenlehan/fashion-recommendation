@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  # Backend API Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fashion-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist database
+      - ./backend/fashion.db:/app/fashion.db
+      # Persist uploaded images
+      - ./backend/uploads:/app/uploads
+      # Persist LoRA adapters (if fine-tuned)
+      - ./backend/ml/lora_adapters:/app/ml/lora_adapters
+      # Cache HuggingFace models
+      - huggingface-cache:/root/.cache/huggingface
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=sqlite:///./fashion.db
+      - BACKEND_CORS_ORIGINS=http://localhost:5173,http://localhost:3000,http://localhost:80
+      - MODEL_NAME=Qwen/Qwen2-VL-7B-Instruct
+      - DEVICE=auto
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    # Uncomment for GPU support
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fashion-frontend
+    ports:
+      - "80:80"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  # Named volume for HuggingFace model cache
+  huggingface-cache:
+    driver: local
+
+networks:
+  default:
+    name: fashion-network

@@ -1,0 +1,12 @@
+# LoRA Fine-tuning Requirements
+# Install these in addition to ml/requirements.txt
+
+peft>=0.13.0              # Parameter-Efficient Fine-Tuning library
+bitsandbytes>=0.44.1      # 4-bit quantization support
+datasets>=2.14.0          # Dataset loading and processing
+accelerate>=0.33.0        # Distributed training (already in ml/requirements.txt)
+transformers>=4.46.0      # Already in ml/requirements.txt
+torch>=2.0.0              # Already in ml/requirements.txt
+tqdm>=4.66.0              # Progress bars
+tensorboard>=2.14.0       # Training monitoring (optional)
+wandb>=0.16.0             # Weights & Biases logging (optional)

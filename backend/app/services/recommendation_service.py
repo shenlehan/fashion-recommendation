@@ -21,7 +21,7 @@ def generate_outfit_recommendations(
     预留接口：生成穿搭推荐
     """
     try:
-        from recommendation.logic import get_recommendations
+        from app.services.recommendation_logic import get_recommendations
         result = get_recommendations(
             user=user_profile,
             wardrobe=wardrobe_items,

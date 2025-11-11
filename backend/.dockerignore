@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Database (will be mounted as volume)
+*.db
+fashion.db
+
+# Uploads (will be mounted as volume)
+uploads/*
+
+# LoRA adapters (will be mounted as volume)
+ml/lora_adapters/*
+
+# Training data
+ml/training_data/training_data.json
+
+# Logs
+*.log
+logs/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+*.md
+
+# Docker
+Dockerfile
+docker-entrypoint.sh
+.dockerignore
+
+# Temporary files
+*.tmp
+*.temp
+tmp/

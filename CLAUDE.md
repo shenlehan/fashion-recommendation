@@ -27,10 +27,13 @@ Key architectural components:
 - **Schemas** (`backend/app/schemas/`): Pydantic validation schemas
 - **Services** (`backend/app/services/`): Business logic layer
   - `image_service.py`: Calls Qwen2-VL ML model to analyze clothing images
-  - `recommendation_service.py`: Generates outfit recommendations using Qwen2-VL
+  - `recommendation_service.py`: Orchestrates outfit recommendation generation
+  - `recommendation_logic.py`: Wraps ML model inference for recommendations
   - `weather_api.py`: Returns mock weather data (hardcoded: 25°C, sunny)
-  - `ml_inference.py`: Placeholder class (not currently used)
 - **Core** (`backend/app/core/`): Configuration and database setup
+- **Scripts** (`backend/scripts/`): Utility scripts
+  - `init_db.py`: Database initialization script
+- **Uploads** (`backend/uploads/`): User-uploaded clothing images storage
 
 ### 2. ML Model (Qwen2-VL-7B-Instruct)
 - **Location**: `backend/ml/`
@@ -47,10 +50,6 @@ Key architectural components:
 - **Device Support**: Auto-detects CUDA GPU or falls back to CPU
 - **Documentation**: See `backend/ml/README.md` and `ML_SETUP_GUIDE.md`
 
-**Legacy Training Code** (`model/`):
-- Original ResNet18-based training pipeline (not used in production)
-- Uses iMaterialist Fashion 2020 dataset
-- Kept for reference/alternative approaches
 
 ### 3. Frontend (React + Vite)
 - **Status**: ✅ **FULLY IMPLEMENTED**
@@ -146,9 +145,72 @@ The backend **FULLY INTEGRATES** with Qwen2-VL-7B:
 - GPU: ~30s first load, 2-5s per inference
 - CPU: ~60s first load, 15-30s per inference
 
+## Docker Deployment (Recommended)
+
+### Quick Start
+
+```bash
+# Start everything
+docker-compose up -d
+
+# Monitor startup (especially first-time model download)
+docker-compose logs -f backend
+
+# Access application
+# Frontend: http://localhost
+# Backend: http://localhost:8000
+# API Docs: http://localhost:8000/docs
+```
+
+**First time**: ~10-20 minutes (downloads 15GB model)
+**Subsequent starts**: ~30 seconds
+
+### Docker Commands
+
+```bash
+# Start services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+
+# Restart
+docker-compose restart
+
+# Shell access
+docker exec -it fashion-backend bash
+
+# Check status
+docker-compose ps
+```
+
+### GPU Support
+
+Enable in `docker-compose.yml`:
+```yaml
+deploy:
+  resources:
+    reservations:
+      devices:
+        - driver: nvidia
+          count: 1
+          capabilities: [gpu]
+```
+
+Requires: [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
+
+### Documentation
+
+- **Quick Start**: [DOCKER_QUICKSTART.md](DOCKER_QUICKSTART.md)
+- **Full Guide**: [DOCKER.md](DOCKER.md)
+- **Deployment Script**: `./deploy.sh`
+
 ## Development Commands
 
-### Backend Development
+### Backend Development (Manual)
 
 **Install dependencies**:
 ```bash
@@ -166,7 +228,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 **Initialize/reset the database**:
 ```bash
 cd backend
-python init_db.py
+python scripts/init_db.py
 ```
 
 **Access API documentation**:
@@ -214,13 +276,6 @@ pip install -r ml/requirements.txt
 - Size: ~15GB
 - Location: `~/.cache/huggingface/hub/`
 
-**Legacy ResNet18 Training** (optional, not used in production):
-```bash
-cd model
-python my_model.py
-```
-- Requires iMaterialist Fashion 2020 dataset
-- Saves checkpoints to `model/model_weights.pth`
 
 ## Key Design Patterns
 
@@ -322,86 +377,136 @@ Note: Dockerfile expects to be run from project root.
    - No size limits
    - No MIME type checking
    - No duplicate filename handling
-   - `uploads/` directory not auto-created
 
-3. **CORS Configuration**
-   - Backend configured for `http://localhost:3000` (line in main.py)
-   - Frontend actually runs on `http://localhost:5173` (Vite default)
-   - Works due to permissive CORS, but should be updated
+## Project Structure
+
+```
+fashion-recommendation/
+├── backend/
+│   ├── app/
+│   │   ├── core/          # Configuration, database setup
+│   │   ├── models/        # SQLAlchemy models
+│   │   ├── routes/        # API endpoints
+│   │   ├── schemas/       # Pydantic schemas
+│   │   └── services/      # Business logic
+│   ├── ml/                # Qwen2-VL model integration
+│   ├── scripts/           # Utility scripts (init_db.py)
+│   ├── uploads/           # User-uploaded images
+│   ├── requirements.txt
+│   └── fashion.db         # SQLite database
+├── frontend/
+│   ├── src/
+│   │   ├── pages/         # React pages
+│   │   └── services/      # API client
+│   ├── package.json
+│   └── vite.config.js
+├── docs/                  # Project documentation
+├── .env.example           # Environment configuration template
+├── .gitignore
+├── CLAUDE.md
+└── README.md
+```
+
+## Environment Configuration
+
+The project supports environment-based configuration via `.env` file:
+
+1. Copy `.env.example` to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Configure your settings in `.env`:
+   - `BACKEND_CORS_ORIGINS`: Frontend URLs (default: `http://localhost:5173,http://localhost:3000`)
+   - `DATABASE_URL`: Database connection string
+   - `MODEL_NAME`: Qwen2-VL model identifier
+   - `DEVICE`: Computing device (auto/cuda/cpu)
+
+See `.env.example` for full list of configurable options.
 
 ## Important Notes
 
 - **Database**: SQLite (`fashion.db`), auto-initializes on backend startup (main.py:14)
-- **Image Storage**: Local filesystem in `uploads/` directory (relative path)
+- **Image Storage**: Local filesystem in `backend/uploads/` directory
 - **Model Cache**: Qwen2-VL downloads to `~/.cache/huggingface/hub/` (~15GB)
-- **Frontend Port**: Development server runs on port 5173 (Vite), not 3000
+- **Frontend Port**: Development server runs on port 5173 (Vite default)
+- **CORS**: Backend configured for both ports 5173 and 3000
 - **Session Management**: Frontend uses localStorage (no token refresh)
 - **Mixed Language**: Comments/strings contain both English and Chinese
 
-## Fine-Tuning with LoRA (Advanced)
+## Fine-Tuning with LoRA
 
-The current implementation uses the **base Qwen2-VL-7B-Instruct model**. To improve fashion-specific performance, you can fine-tune using **LoRA (Low-Rank Adaptation)**:
+The project includes a complete **LoRA (Low-Rank Adaptation)** fine-tuning pipeline to improve fashion-specific performance.
 
-### Why LoRA?
-- **Memory Efficient**: Fine-tune 7B model on ~12GB GPU (with 4-bit quantization)
-- **Fast Training**: Only trains <1% of parameters
-- **Preserves Base Model**: Original weights unchanged, LoRA adapters are small (~100MB)
-- **Customizable**: Improve domain-specific performance (fashion terminology, style advice)
+### ✅ What's Included
 
-### Required Libraries
+**Directory: `backend/ml/finetune/`**
+- `train_lora.py` - Complete training pipeline
+- `test_lora.py` - Model testing script
+- `config.yaml` - Training configuration
+- `requirements_lora.txt` - LoRA dependencies
+- `README.md` - Comprehensive guide
+- `QUICKSTART.md` - 5-step quick start
+
+**Directory: `backend/ml/training_data/`**
+- `generate_from_db.py` - Auto-generate training data from database
+- `data_format.json` - Training data format examples
+- `training_data.json` - Generated training examples (created on first run)
+
+**Directory: `backend/ml/lora_adapters/`**
+- Fine-tuned model adapters are saved here (~50-150MB)
+- Auto-loaded by `inference.py` if available
+
+### Quick Start
+
 ```bash
-pip install peft accelerate bitsandbytes datasets
+# 1. Install dependencies
+cd backend/ml/finetune
+pip install -r requirements_lora.txt
+
+# 2. Generate training data
+cd ../training_data
+python generate_from_db.py
+
+# 3. Train model (1-2 hours on GPU, 4-8 hours on CPU)
+cd ../finetune
+python train_lora.py
+
+# 4. Test fine-tuned model
+python test_lora.py
+
+# 5. Restart backend - adapters auto-load!
+cd ../../..
+uvicorn app.main:app --reload
 ```
 
-### Key Steps
-1. **Prepare Fashion Dataset**
-   - Create training examples with wardrobe items → outfit recommendations
-   - Format: `{ "input": "context", "output": "recommendation" }`
-   - Need 100-1000+ quality examples
-   - Can generate from existing user data
+### Key Features
 
-2. **Configure LoRA**
-   ```python
-   from peft import LoraConfig, get_peft_model
+- **Parameter-Efficient**: Trains <1% of model parameters
+- **Memory-Efficient**: ~12GB GPU with 4-bit quantization
+- **Auto-Loading**: `inference.py` automatically detects and loads adapters
+- **Fallback**: Uses base model if adapters not found
+- **Data Generation**: Extract training data from your existing database
+- **Configurable**: Extensive configuration options in `config.yaml`
 
-   lora_config = LoraConfig(
-       r=16,  # Rank (higher = more capacity)
-       lora_alpha=32,  # Scaling factor
-       target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
-       lora_dropout=0.05,
-       bias="none",
-       task_type="CAUSAL_LM"
-   )
-   ```
+### Expected Improvements
 
-3. **Training Script Location**
-   - Create: `backend/ml/finetune_lora.py`
-   - Training data: `backend/ml/fashion_training_data.json`
-   - Output: `backend/ml/lora_adapters/` (~100MB)
+After fine-tuning with 100-1000 examples:
+- ✅ Better fashion terminology and category recognition
+- ✅ More detailed reasoning in outfit recommendations
+- ✅ Consistent JSON output format
+- ✅ Domain-specific style advice for body types
+- ✅ Personalized to your user base
 
-4. **Load Fine-tuned Model**
-   ```python
-   from peft import PeftModel
+### Documentation
 
-   base_model = Qwen2VLForConditionalGeneration.from_pretrained(...)
-   model = PeftModel.from_pretrained(base_model, "./ml/lora_adapters")
-   ```
+- **Quick Start**: `backend/ml/finetune/QUICKSTART.md`
+- **Full Guide**: `backend/ml/finetune/README.md`
+- **Configuration**: `backend/ml/finetune/config.yaml`
+- **Data Format**: `backend/ml/training_data/data_format.json`
 
-### Training Data Strategy
-- **Image Analysis Examples**: Clothing images → category/color/season/material
-- **Outfit Recommendations**: Wardrobe + weather + preferences → styled outfits
-- **Missing Items**: Wardrobe gaps → suggestions with reasoning
-- **Style Advice**: Body type + occasion → outfit guidelines
+### Hardware Requirements
 
-### Performance Expectations
-- **GPU (RTX 3090/4090)**: 2-4 hours for 1000 examples (3 epochs)
-- **Memory**: ~12GB VRAM with 4-bit quantization
-- **Adapter Size**: ~50-150MB (vs 15GB base model)
-- **Inference Speed**: Nearly identical to base model
-
-### Integration
-- Modify `backend/ml/inference.py` to load LoRA adapters
-- Keep fallback to base model if adapters not found
-- Version control adapters separately (too large for git)
-
-See detailed guide: `ML_SETUP_GUIDE.md` (would need to be created)
+**Minimum**: 16GB RAM (CPU training)
+**Recommended**: 12GB+ GPU (RTX 3060, 4060 Ti, or better)
+**Optimal**: 16GB+ GPU (RTX 4080, 4090)

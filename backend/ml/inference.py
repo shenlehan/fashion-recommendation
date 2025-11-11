@@ -1,6 +1,7 @@
 """
 Qwen2-VL-7B Inference Module
 Handles clothing image analysis and outfit recommendations
+Supports LoRA fine-tuned adapters
 """
 import json
 import os
@@ -12,32 +13,78 @@ from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
 from qwen_vl_utils import process_vision_info
 from PIL import Image
 
+# Try to import PEFT for LoRA support
+try:
+    from peft import PeftModel
+    PEFT_AVAILABLE = True
+except ImportError:
+    PEFT_AVAILABLE = False
+    print("⚠️  PEFT not available. Install with: pip install peft")
+
 
 class FashionQwenModel:
     """Multimodal Fashion Analysis using Qwen2-VL-7B"""
-    
-    def __init__(self, model_name: str = "Qwen/Qwen2-VL-7B-Instruct"):
+
+    def __init__(self, model_name: str = "Qwen/Qwen2-VL-7B-Instruct", use_lora: bool = True):
         """
         Initialize Qwen2-VL model
-        
+
         Args:
             model_name: HuggingFace model identifier
+            use_lora: Whether to load LoRA fine-tuned adapters if available
         """
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.use_lora = use_lora and PEFT_AVAILABLE
+
         print(f"Initializing Qwen2-VL on device: {self.device}")
-        
-        # Load model and processor
+
+        # Load base model
         self.model = Qwen2VLForConditionalGeneration.from_pretrained(
             model_name,
             torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
-            device_map="auto" if self.device == "cuda" else None
+            device_map="auto" if self.device == "cuda" else None,
+            trust_remote_code=True
         )
-        self.processor = AutoProcessor.from_pretrained(model_name)
-        
+        self.processor = AutoProcessor.from_pretrained(model_name, trust_remote_code=True)
+
+        # Load LoRA adapters if available
+        if self.use_lora:
+            lora_path = self._find_lora_adapters()
+            if lora_path:
+                try:
+                    print(f"📦 Loading LoRA adapters from: {lora_path}")
+                    self.model = PeftModel.from_pretrained(self.model, lora_path)
+                    self.model.eval()
+                    print("✅ LoRA fine-tuned model loaded successfully!")
+                except Exception as e:
+                    print(f"⚠️  Failed to load LoRA adapters: {e}")
+                    print("   Using base model instead.")
+            else:
+                print("ℹ️  No LoRA adapters found. Using base model.")
+                print("   To use fine-tuned model, run: python ml/finetune/train_lora.py")
+
         if self.device == "cpu":
             self.model = self.model.to(self.device)
-        
+
         print("Model loaded successfully!")
+
+    def _find_lora_adapters(self) -> Optional[str]:
+        """Find LoRA adapter directory"""
+        # Check for final trained model
+        base_path = Path(__file__).parent / "lora_adapters"
+
+        final_path = base_path / "final"
+        if final_path.exists() and (final_path / "adapter_config.json").exists():
+            return str(final_path)
+
+        # Check for latest checkpoint
+        checkpoints = sorted(base_path.glob("checkpoint-*"))
+        if checkpoints:
+            latest = checkpoints[-1]
+            if (latest / "adapter_config.json").exists():
+                return str(latest)
+
+        return None
     
     def analyze_clothing_image(self, image_path: str) -> Dict[str, Any]:
         """
