@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Wardrobe from './pages/Wardrobe';
@@ -34,8 +34,8 @@ function App() {
           <nav className="navbar">
             <div className="nav-brand">Fashion Recommender</div>
             <div className="nav-links">
-              <a href="/wardrobe">My Wardrobe</a>
-              <a href="/recommendations">Get Recommendations</a>
+              <Link to="/wardrobe">My Wardrobe</Link>
+              <Link to="/recommendations">Get Recommendations</Link>
               <span className="user-info">Hello, {user.username}!</span>
               <button onClick={handleLogout} className="btn-logout">Logout</button>
             </div>
