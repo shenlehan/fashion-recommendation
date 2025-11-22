@@ -1,14 +1,14 @@
 # Fashion Recommendation ML Module
 
-This module uses **Qwen2-VL-7B-Instruct** - a multimodal Large Language Model for:
+This module uses **Qwen3-VL-8B-Instruct** - the most powerful multimodal Large Language Model in the Qwen series for:
 1. **Clothing Image Analysis**: Extract category, color, season, and material from clothing images
 2. **Outfit Recommendations**: Generate personalized outfit suggestions based on wardrobe, weather, and preferences
 
 ## Model Information
 
-- **Model**: [Qwen/Qwen2-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct)
-- **Parameters**: 7 Billion
-- **Capabilities**: Vision + Language understanding
+- **Model**: [Qwen/Qwen3-VL-8B-Instruct](https://huggingface.co/Qwen/Qwen3-VL-8B-Instruct)
+- **Parameters**: 8 Billion
+- **Capabilities**: Enhanced vision + language understanding with improved spatial perception
 - **Hardware Requirements**:
   - **GPU**: Recommended (16GB+ VRAM for optimal performance)
   - **CPU**: Supported but slower (32GB+ RAM recommended)
@@ -18,7 +18,7 @@ This module uses **Qwen2-VL-7B-Instruct** - a multimodal Large Language Model fo
 ### 1. Install Dependencies
 
 ```bash
-cd backend/ml
+cd ml
 pip install -r requirements.txt
 ```
 
@@ -32,7 +32,7 @@ If you prefer to download manually:
 
 ```bash
 # Using huggingface-cli
-huggingface-cli download Qwen/Qwen2-VL-7B-Instruct
+huggingface-cli download Qwen/Qwen3-VL-8B-Instruct
 ```
 
 ## Usage
@@ -166,21 +166,35 @@ If download fails:
 huggingface-cli whoami
 
 # Manually download
-huggingface-cli download Qwen/Qwen2-VL-7B-Instruct
+huggingface-cli download Qwen/Qwen3-VL-8B-Instruct
 ```
 
 ## Alternative Models
 
-If Qwen2-VL-7B is too large, you can modify `inference.py` to use:
-- **Qwen2-VL-2B-Instruct**: Smaller, faster, less accurate
-- **LLaVA-1.5-7B**: Alternative multimodal model
-- **BLIP-2**: Lighter weight option
+If Qwen3-VL-8B is too large, you can modify `inference.py` to use:
+- **Qwen3-VL-2B-Instruct**: Smaller, faster, less accurate
+- **Qwen3-VL-4B-Instruct**: Balanced option
+- **Qwen2.5-VL-7B-Instruct**: Previous generation
 
 Change the model name in `FashionQwenModel.__init__()`:
 ```python
-def __init__(self, model_name: str = "Qwen/Qwen2-VL-2B-Instruct"):
+def __init__(self, model_name: str = "Qwen/Qwen3-VL-4B-Instruct"):
+```
+
+## API Access (Alternative to Local Model)
+
+Instead of running the model locally, you can use Qwen API for faster inference:
+
+### Get API Key:
+1. **Alibaba Cloud DashScope** (Official): https://www.alibabacloud.com/help/en/model-studio/get-api-key
+2. **Qwen.ai Platform**: https://qwen.ai/apiplatform
+3. **OpenRouter** (Free Tier): https://openrouter.ai
+
+Set environment variable:
+```bash
+export QWEN_API_KEY="your-api-key-here"
 ```
 
 ## License
 
-This module uses the Qwen2-VL model which is licensed under Apache 2.0.
+This module uses the Qwen3-VL model which is licensed under Apache 2.0.

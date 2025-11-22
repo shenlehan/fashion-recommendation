@@ -22,12 +22,16 @@ def upload_clothing(
 
   attributes = analyze_clothing_image(file_path)
 
+  season = attributes["season"]
+  if isinstance(season, list):
+    season = ",".join(season)
+
   db_item = WardrobeItem(
     user_id=user_id,
     name=file.filename,
     category=attributes["category"],
     color=attributes["color"],
-    season=",".join(attributes["season"]),
+    season=season,
     material=attributes.get("material", ""),
     image_path=file_path
   )
@@ -37,7 +41,22 @@ def upload_clothing(
   return {"message": "Upload Successfully!", "item_id": db_item.id}
 
 
-@router.get("/wardrobe")
+@router.get("/wardrobe/{user_id}")
 def get_wardrobe(user_id: int, db: Session = Depends(get_db)):
   items = db.query(WardrobeItem).filter(WardrobeItem.user_id == user_id).all()
   return items
+
+
+@router.delete("/{item_id}")
+def delete_clothing_item(item_id: int, db: Session = Depends(get_db)):
+  item = db.query(WardrobeItem).filter(WardrobeItem.id == item_id).first()
+  if not item:
+    return {"error": "Item not found"}
+
+  import os
+  if item.image_path and os.path.exists(item.image_path):
+    os.remove(item.image_path)
+
+  db.delete(item)
+  db.commit()
+  return {"message": "Item deleted successfully"}

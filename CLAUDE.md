@@ -32,18 +32,22 @@ Key architectural components:
   - `ml_inference.py`: ML model inference wrapper
 - **Core** (`backend/app/core/`): Configuration and database setup
 
-### 2. ML Model (PyTorch)
-- **Location**: `model/`
-- **Architecture**: ResNet18-based multi-label classifier
-- **Purpose**: Classifies clothing items by category, color, season, material
-- **Data**: Uses iMaterialist Fashion 2020 dataset
-- **Training**: `model/my_model.py` handles training with checkpointing
-- **Data Processing**: `model/data_processing.py` handles dataset loading and preprocessing
+### 2. ML Model (Qwen3-VL)
+- **Location**: `ml/`
+- **Architecture**: Qwen3-VL-8B-Instruct (Multimodal LLM)
+- **Purpose**: Analyzes clothing images and generates outfit recommendations
+- **Integration**: `ml/inference.py` provides `predict()` and `get_recommendations()` functions
+- **Key Features**:
+  - Image analysis: Extracts category, color, season, material from clothing images
+  - Outfit recommendations: Generates personalized outfit combinations
+  - Lazy loading: Model instance cached for performance
 
-### 3. Frontend (Planned)
-- **Status**: Not yet implemented
-- **Expected Stack**: React (per requirements.md)
-- **Target Port**: 3000 (configured in CORS settings)
+### 3. Frontend (React + Vite)
+- **Status**: Fully implemented
+- **Location**: `frontend/`
+- **Stack**: React 19, React Router 7, Axios
+- **Pages**: Login, Register, Wardrobe, Recommendations
+- **Dev Server Port**: 5173 (Vite default)
 
 ## Database Schema
 
@@ -89,22 +93,27 @@ pip install -r requirements.txt
 
 ### ML Model Development
 
-**Train the model**:
+**Install ML dependencies**:
 ```bash
-cd model
-python my_model.py
+cd ml
+pip install -r requirements.txt
+```
+
+**Test the model**:
+```bash
+cd backend
+python -m ml.test_model
 ```
 
 **Requirements**:
-- PyTorch with CUDA support (if GPU available)
-- Dataset directory: `../imaterialist-fashion-2020-fgvc7`
-- Model checkpoints saved to: `model/model_weights.pth`
+- PyTorch with CUDA support (GPU with 16GB+ VRAM recommended)
+- HuggingFace model: Qwen/Qwen3-VL-8B-Instruct (~15GB download)
+- 32GB+ RAM for CPU-only usage
 
 **Notes**:
-- Training auto-resumes from checkpoint if `model_weights.pth` exists
-- Uses 80/20 train/validation split
-- Default batch size: 128
-- Default epochs: 5
+- Model auto-downloads from HuggingFace on first use
+- Uses lazy loading with global instance caching
+- GPU recommended for reasonable performance (2-5s vs 15-30s per image)
 
 ## Key Design Patterns
 
@@ -147,18 +156,18 @@ Note: Dockerfile expects to be run from project root.
 - Clothing upload ✓
 - Wardrobe listing ✓
 - Weather API (mock) ✓
-- Image analysis (mock) ✓
-- Outfit recommendations (mock) ✓
-- ML model training ✓
-- ML inference integration ✗
-- Frontend ✗
+- Image analysis (Qwen3-VL) ✓
+- Outfit recommendations (Qwen3-VL) ✓
+- ML inference integration ✓
+- Frontend (React) ✓
 - Authentication/JWT ✗
+- Password hashing ✗
 
 ## Important Notes
 
 - Passwords are stored as plaintext (hashed_password field stores unhashed password) - **security issue**
 - No authentication middleware - all endpoints publicly accessible
 - Weather API requires API key configuration (currently mocked)
-- CORS configured for `http://localhost:3000` only
+- CORS configured for `http://localhost:5173` (Vite dev server)
 - Uploaded images stored locally in `uploads/` directory
 - Database auto-initializes on backend startup (line 14 in main.py)

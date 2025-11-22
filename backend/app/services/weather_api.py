@@ -1,13 +1,3 @@
-"""
-天气 API 服务
-职责：根据城市获取当前天气信息
-与外部 API 交互：OpenWeatherMap（或其他）
-返回格式：{
-    "temperature": 25,
-    "weather": "sunny",
-    "humidity": 60
-}
-"""
 import requests
 from typing import Dict, Any
 

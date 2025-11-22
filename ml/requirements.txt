@@ -1,4 +1,3 @@
-# Qwen2-VL Model Requirements
 torch>=2.0.0
 transformers>=4.37.0
 accelerate>=0.20.0

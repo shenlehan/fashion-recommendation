@@ -1,6 +1,6 @@
-# ML Model Setup Guide - Qwen2-VL Integration
+# ML Model Setup Guide - Qwen3-VL Integration
 
-This guide will help you set up the Qwen2-VL-7B multimodal LLM for fashion image analysis and recommendations.
+This guide will help you set up the Qwen3-VL-8B multimodal LLM for fashion image analysis and recommendations.
 
 ## 📋 Prerequisites
 
@@ -14,7 +14,7 @@ This guide will help you set up the Qwen2-VL-7B multimodal LLM for fashion image
 ### Step 1: Install ML Dependencies
 
 ```bash
-cd backend/ml
+cd ml
 pip install -r requirements.txt
 ```
 
@@ -64,7 +64,7 @@ backend/app/services/image_service.py calls ml.inference.predict()
          ↓
 ml/inference.py: FashionQwenModel.analyze_clothing_image()
          ↓
-Qwen2-VL analyzes image → Returns: {category, color, season, material}
+Qwen3-VL analyzes image → Returns: {category, color, season, material}
          ↓
 Backend saves item to database with extracted attributes
 ```
@@ -82,7 +82,7 @@ backend/app/services/recommendation_service.py calls recommendation.logic
          ↓
 recommendation/logic.py calls ml.inference.get_recommendations()
          ↓
-Qwen2-VL generates outfit combinations and missing items analysis
+Qwen3-VL generates outfit combinations and missing items analysis
          ↓
 Returns structured recommendations to frontend
 ```
@@ -105,10 +105,10 @@ uvicorn app.main:app --reload
 
 To use a different model (e.g., smaller 2B version):
 
-Edit `backend/ml/inference.py`:
+Edit `ml/inference.py`:
 ```python
 class FashionQwenModel:
-    def __init__(self, model_name: str = "Qwen/Qwen2-VL-2B-Instruct"):  # Changed from 7B to 2B
+    def __init__(self, model_name: str = "Qwen/Qwen3-VL-4B-Instruct"):
         ...
 ```
 
@@ -179,7 +179,7 @@ Then test via the frontend:
 export CUDA_VISIBLE_DEVICES=""
 
 # Or use smaller model
-# Edit ml/inference.py and change to Qwen2-VL-2B-Instruct
+# Edit ml/inference.py and change to Qwen3-VL-4B-Instruct
 ```
 
 ### Problem: Model Download Fails
@@ -190,8 +190,8 @@ export CUDA_VISIBLE_DEVICES=""
 ping huggingface.co
 
 # Manual download
-huggingface-cli login  # if needed
-huggingface-cli download Qwen/Qwen2-VL-7B-Instruct
+huggingface-cli login
+huggingface-cli download Qwen/Qwen3-VL-8B-Instruct
 ```
 
 ### Problem: Import Error
@@ -199,7 +199,7 @@ huggingface-cli download Qwen/Qwen2-VL-7B-Instruct
 **Solution**:
 ```bash
 # Reinstall dependencies
-cd backend/ml
+cd ml
 pip install --upgrade -r requirements.txt
 ```
 
@@ -255,16 +255,16 @@ for image in image_list:
 
 ## 🎓 Model Information
 
-- **Name**: Qwen2-VL-7B-Instruct
+- **Name**: Qwen3-VL-8B-Instruct
 - **Developer**: Alibaba Cloud
-- **Type**: Multimodal (Vision + Language)
-- **Parameters**: 7 Billion
+- **Type**: Multimodal (Vision + Language) - Most powerful in Qwen series
+- **Parameters**: 8 Billion
 - **License**: Apache 2.0
-- **HuggingFace**: https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct
+- **HuggingFace**: https://huggingface.co/Qwen/Qwen3-VL-8B-Instruct
 
 ## 🚦 Next Steps
 
-1. ✅ Install dependencies: `pip install -r backend/ml/requirements.txt`
+1. ✅ Install dependencies: `pip install -r ml/requirements.txt`
 2. ✅ Run test script: `python -m ml.test_model`
 3. ✅ Start backend: `uvicorn app.main:app --reload`
 4. ✅ Test via frontend: Upload images and get recommendations!

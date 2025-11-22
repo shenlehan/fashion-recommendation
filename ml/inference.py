@@ -4,17 +4,17 @@ from typing import Dict, List, Any, Optional
 from pathlib import Path
 
 import torch
-from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
+from transformers import AutoModelForImageTextToText, AutoProcessor
 from qwen_vl_utils import process_vision_info
 from PIL import Image
 
 
 class FashionQwenModel:
-  def __init__(self, model_name: str = "Qwen/Qwen2-VL-7B-Instruct"):
+  def __init__(self, model_name: str = "Qwen/Qwen3-VL-8B-Instruct"):
     self.device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"Initializing Qwen2-VL on device: {self.device}")
+    print(f"Initializing Qwen3-VL on device: {self.device}")
 
-    self.model = Qwen2VLForConditionalGeneration.from_pretrained(
+    self.model = AutoModelForImageTextToText.from_pretrained(
       model_name,
       torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
       device_map="auto" if self.device == "cuda" else None
