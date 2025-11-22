@@ -1,27 +1,29 @@
 import torch
-from transformers import AutoModelForImageTextToText, AutoProcessor
+from modelscope import AutoModelForCausalLM, AutoProcessor
 
 print("Starting Qwen3-VL-8B-Instruct download...")
 print("This will download approximately 15GB of model files.")
-print("Please wait, this may take several minutes depending on your internet connection.\n")
+print("Using ModelScope for faster and stable download in China.")
+print("Please wait, this may take several minutes depending on your network.\n")
 
-model_name = "Qwen/Qwen3-VL-8B-Instruct"
+model_id = "Qwen/Qwen3-VL-8B-Instruct"
 
-print(f"Downloading processor for {model_name}...")
-processor = AutoProcessor.from_pretrained(model_name)
-print("Processor downloaded successfully!")
+print(f"Downloading processor for {model_id}...")
+processor = AutoProcessor.from_pretrained(model_id, trust_remote_code=True)
+print("Processor downloaded successfully!\n")
 
-print(f"\nDownloading model {model_name}...")
+print(f"Downloading model {model_id}...")
 device = "cuda" if torch.cuda.is_available() else "cpu"
-dtype = torch.float16 if device == "cuda" else torch.float32
+dtype = torch.bfloat16 if device == "cuda" and torch.cuda.is_bf16_supported() else torch.float16
 
-model = AutoModelForImageTextToText.from_pretrained(
-    model_name,
+model = AutoModelForCausalLM.from_pretrained(
+    model_id,
     torch_dtype=dtype,
-    device_map="auto" if device == "cuda" else None
+    device_map="auto",
+    trust_remote_code=True,
 )
-print("Model downloaded successfully!")
+print("Model downloaded successfully!\n")
 
-print(f"\nModel will be used on: {device}")
+print(f"Model loaded on: {device.upper()}")
 print(f"Data type: {dtype}")
-print("\nDownload complete! The model is ready to use.")
+print("\nDownload & loading complete! The model is ready to use.")
