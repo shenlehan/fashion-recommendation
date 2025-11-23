@@ -58,6 +58,7 @@ INSTRUCTIONS:
 Be precise and objective. Respond ONLY with the JSON object:
 
 {
+  "name": "[descriptive name for this item - e.g., \"Navy Blue Denim Jacket\", \"Gray Wool Coat\", \"Black Leather Boots\"]",
   "category": "[top/bottom/dress/outerwear/shoes/accessories]",
   "color": "[exact primary color name - be specific: e.g., navy blue, light gray, burgundy]",
   "season": ["spring", "summer", "fall", "winter"],

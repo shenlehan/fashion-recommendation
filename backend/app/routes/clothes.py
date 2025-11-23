@@ -20,15 +20,19 @@ def upload_clothing(
   with open(file_path, "wb") as f:
     f.write(file.file.read())
 
+  # Analyze image with Qwen model
   attributes = analyze_clothing_image(file_path)
 
   season = attributes["season"]
   if isinstance(season, list):
     season = ",".join(season)
 
+  # Use AI-generated name if available, otherwise use filename
+  item_name = attributes.get("name", file.filename)
+
   db_item = WardrobeItem(
     user_id=user_id,
-    name=file.filename,
+    name=item_name,
     category=attributes["category"],
     color=attributes["color"],
     season=season,
