@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { getOutfitRecommendations } from '../services/api';
 import './Recommendations.css';
 
@@ -13,9 +13,8 @@ function Recommendations({ user }) {
   });
   const [showPreferences, setShowPreferences] = useState(false);
 
-  useEffect(() => {
-    fetchRecommendations();
-  }, [user.id]);
+  // NOTE: Removed useEffect - no auto-fetching!
+  // Recommendations are only generated when user clicks "Regenerate"
 
   const fetchRecommendations = async (userPreferences = {}) => {
     try {
@@ -50,25 +49,26 @@ function Recommendations({ user }) {
           <button
             className="btn-secondary"
             onClick={() => setShowPreferences(!showPreferences)}
+            disabled={loading}
           >
-            {showPreferences ? 'Hide Filters' : 'Customize'}
+            {showPreferences ? '隐藏偏好' : '我的偏好风格'}
           </button>
           <button className="btn-primary" onClick={handleRegenerate} disabled={loading}>
-            {loading ? 'Loading...' : 'Regenerate'}
+          {loading ? 'Loading...' : '生成新推荐'}
           </button>
         </div>
       </div>
 
       {showPreferences && (
         <div className="preferences-panel">
-          <h2>Customize Your Recommendations</h2>
+          <h2>自定义穿搭！</h2>
           <p className="preferences-subtitle">
-            Tell us what you're looking for, and we'll tailor the suggestions
+            今天你有什么特别想穿的风格呢？
           </p>
 
           <div className="preferences-form">
             <div className="form-group">
-              <label htmlFor="occasion">Occasion</label>
+              <label htmlFor="occasion">场合</label>
               <select
                 id="occasion"
                 value={preferences.occasion}
@@ -77,16 +77,16 @@ function Recommendations({ user }) {
                 }
               >
                 <option value="">Any</option>
-                <option value="casual">Casual</option>
-                <option value="business">Business</option>
-                <option value="formal">Formal</option>
-                <option value="sport">Sport/Active</option>
-                <option value="party">Party</option>
+                <option value="Casual">随意</option>
+                <option value="Business">商务</option>
+                <option value="Formal"> 正式</option>
+                <option value="Sport/Active"> 运动 </option>
+                <option value="Party">狂野</option>
               </select>
             </div>
 
             <div className="form-group">
-              <label htmlFor="style">Style</label>
+              <label htmlFor="style">风格</label>
               <select
                 id="style"
                 value={preferences.style}
@@ -130,7 +130,11 @@ function Recommendations({ user }) {
       {error && <div className="error-message">{error}</div>}
 
       {loading ? (
-        <div className="loading">Generating recommendations...</div>
+        <div className="loading">
+          <div className="loading-spinner"></div>
+          <p>推荐生成中...</p>
+          <p className="loading-subtext">This may take 30-60 seconds</p>
+        </div>
       ) : recommendations ? (
         <div className="recommendations-content">
           <div className="weather-info">
@@ -197,7 +201,17 @@ function Recommendations({ user }) {
         </div>
       ) : (
         <div className="no-recommendations">
-          <p>Click "Regenerate" to get personalized outfit recommendations!</p>
+          <div className="welcome-message">
+            <h2>👔 Get Personalized Outfit Recommendations</h2>
+            <p>Click the <strong>"Regenerate"</strong> button above to get AI-powered outfit suggestions based on:</p>
+            <ul>
+              <li>✅ Your wardrobe items</li>
+              <li>✅ Current weather in {user.city || 'your city'}</li>
+              <li>✅ Your body type and style preferences</li>
+              <li>✅ Complete head-to-toe outfit combinations</li>
+            </ul>
+            <p className="tip">💡 提示: 使用“我的偏好风格”来获得更加个性化的推荐~</p>
+          </div>
         </div>
       )}
     </div>
