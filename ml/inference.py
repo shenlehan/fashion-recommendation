@@ -2,6 +2,7 @@ import json
 import os
 from typing import Dict, List, Any, Optional
 from pathlib import Path
+import threading
 
 import torch
 from transformers import AutoModelForImageTextToText, AutoProcessor
@@ -10,16 +11,25 @@ from PIL import Image
 
 
 class FashionQwenModel:
-  def __init__(self, model_name: str = "Qwen/Qwen3-VL-8B-Instruct"):
+  def __init__(self, model_name: str = None):
+    if model_name is None:
+      project_root = Path(__file__).resolve().parent.parent
+      model_name = str(project_root / "models" / "Qwen" / "Qwen3-VL-8B-Instruct")
+    
     self.device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Initializing Qwen3-VL on device: {self.device}")
+    print(f"Loading model from: {model_name}")
 
     self.model = AutoModelForImageTextToText.from_pretrained(
       model_name,
       torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
-      device_map="auto" if self.device == "cuda" else None
+      device_map="auto" if self.device == "cuda" else None,
+      local_files_only=True
     )
-    self.processor = AutoProcessor.from_pretrained(model_name)
+    self.processor = AutoProcessor.from_pretrained(
+      model_name,
+      local_files_only=True
+    )
 
     if self.device == "cpu":
       self.model = self.model.to(self.device)
@@ -37,15 +47,22 @@ class FashionQwenModel:
           },
           {
             "type": "text",
-            "text": """Analyze this clothing item and provide the following information in JSON format:
-{
-  "category": "top/bottom/dress/outerwear/shoes/accessories",
-  "color": "primary color name",
-  "season": ["spring", "summer", "fall", "winter"] (list all suitable seasons),
-  "material": "fabric type (e.g., cotton, denim, wool, polyester, silk)"
-}
+            "text": """You are an expert fashion analyst. Carefully examine this clothing item and provide accurate details in JSON format.
 
-Only respond with the JSON object, nothing else."""
+INSTRUCTIONS:
+- Identify the PRIMARY color (not patterns or secondary colors)
+- Determine the exact category from these options: top, bottom, dress, outerwear, shoes, accessories
+- List ALL suitable seasons based on the material and style
+- Identify the fabric/material type
+
+Be precise and objective. Respond ONLY with the JSON object:
+
+{
+  "category": "[top/bottom/dress/outerwear/shoes/accessories]",
+  "color": "[exact primary color name - be specific: e.g., navy blue, light gray, burgundy]",
+  "season": ["spring", "summer", "fall", "winter"],
+  "material": "[specific fabric type: cotton, denim, wool, leather, polyester, silk, etc.]"
+}"""
           }
         ],
       }
@@ -137,7 +154,7 @@ Only respond with the JSON object, nothing else."""
       if pref_parts:
         pref_text = f"\n\nUser Preferences:\n" + "\n".join(pref_parts)
 
-    prompt = f"""You are a professional fashion stylist. Based on the following information, create outfit recommendations:
+    prompt = f"""You are a professional fashion stylist. Create complete outfit recommendations from HEAD TO TOE based on the following information:
 
 User Profile:
 {user_text}
@@ -148,23 +165,35 @@ Current Weather:
 Available Wardrobe Items:
 {wardrobe_text}{pref_text}
 
-Please provide:
-1. 2-3 complete outfit combinations using the available items (reference items by their numbers)
-2. Analysis of missing items that would enhance the wardrobe
-3. Brief explanation for each outfit
+IMPORTANT INSTRUCTIONS:
+1. Create 2-3 COMPLETE outfit combinations (from shoes/footwear to outerwear/accessories)
+2. Each outfit MUST include items from different categories when possible:
+   - Footwear (shoes, boots, sneakers)
+   - Bottoms (pants, jeans, skirts, shorts)
+   - Tops (shirts, blouses, t-shirts)
+   - Outerwear (jackets, coats, cardigans) if weather appropriate
+   - Accessories (bags, hats, scarves) if available
+3. Reference items by their numbers from the wardrobe list
+4. Ensure outfits are weather-appropriate and match the user's style
+5. Provide styling tips for each complete outfit
+
+For missing items analysis:
+- Identify gaps across ALL categories (shoes, bottoms, tops, outerwear, accessories)
+- Prioritize essential items needed for complete outfits
+- Consider weather requirements and versatility
 
 Respond in this JSON format:
 {{
   "outfits": [
     {{
-      "items": [list of item numbers from the wardrobe],
-      "description": "brief description of the outfit and why it works"
+      "items": [list of item numbers from wardrobe - aim for 3-5 items per outfit],
+      "description": "detailed description of the complete outfit from shoes to top, including styling tips"
     }}
   ],
   "missing_items": [
     {{
-      "category": "item type",
-      "reason": "why this item would be useful"
+      "category": "specific item type (e.g., \"black leather boots\", \"blue jeans\", \"light jacket\")",
+      "reason": "why this item would complete your wardrobe or enable new outfit combinations"
     }}
   ]
 }}
@@ -242,14 +271,44 @@ Only respond with the JSON object."""
       }
 
 
+# Thread-safe singleton pattern
 _model_instance: Optional[FashionQwenModel] = None
+_model_lock = threading.Lock()
+_model_loading = False
 
 
 def get_model() -> FashionQwenModel:
-  global _model_instance
-  if _model_instance is None:
-    _model_instance = FashionQwenModel()
-  return _model_instance
+  """Get or create the model instance (thread-safe singleton)"""
+  global _model_instance, _model_loading
+  
+  # Fast path: model already loaded
+  if _model_instance is not None:
+    return _model_instance
+  
+  # Slow path: need to load model
+  with _model_lock:
+    # Double-check: maybe another thread loaded it while we were waiting
+    if _model_instance is not None:
+      return _model_instance
+    
+    # Prevent multiple concurrent loads
+    if _model_loading:
+      print("Model is already being loaded by another thread, waiting...")
+      # Wait for the other thread to finish loading
+      while _model_loading:
+        import time
+        time.sleep(1)
+      return _model_instance
+    
+    # We are the thread that will load the model
+    _model_loading = True
+    try:
+      print("Loading Qwen model (this may take 1-2 minutes)...")
+      _model_instance = FashionQwenModel()
+      print("Model ready for inference!")
+      return _model_instance
+    finally:
+      _model_loading = False
 
 
 def predict(image_path: str) -> Dict[str, Any]:

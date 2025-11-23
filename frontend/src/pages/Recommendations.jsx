@@ -154,7 +154,7 @@ function Recommendations({ user }) {
                           <div className="outfit-item-image">
                             {item.image_path ? (
                               <img
-                                src={`http://localhost:8000/${item.image_path}`}
+                                src={`http://8.153.91.71:8000/${item.image_path}`}
                                 alt={item.name}
                               />
                             ) : (
