@@ -1,0 +1,60 @@
+INFO:     Started server process [8402]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+Creating Database..
+Completed!
+INFO:     121.236.217.133:11277 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7781 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7782 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.133:11278 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7781 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.133:11277 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7782 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.133:11278 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7782 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7781 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7782 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7781 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57686 - "GET /health HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7814 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7815 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7814 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7815 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.133:11282 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7816 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.133:11283 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7817 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.133:11282 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7816 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.133:11283 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7817 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.133:11284 - "GET /uploads/blue_jacket.webp HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7818 - "GET /uploads/jeans.jpg HTTP/1.1" 200 OK
+INFO:     121.236.217.133:11285 - "GET /uploads/brown_sweater.webp HTTP/1.1" 200 OK
+INFO:     121.236.217.133:11317 - "GET /uploads/jeans.jpg HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7819 - "GET /uploads/blue_jacket.webp HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7820 - "GET /uploads/brown_sweater.webp HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7821 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7822 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7823 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7824 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7825 - "POST /api/v1/users/login HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7825 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7826 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading Qwen model (this may take 1-2 minutes)...
+Initializing Qwen3-VL on device: cuda
+Loading model from: /home/shenlehan/fashion-recommendation/models/Qwen/Qwen3-VL-8B-Instruct
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:34<01:43, 34.56s/it]Loading checkpoint shards:  50%|█████     | 2/4 [01:10<01:10, 35.14s/it]Loading checkpoint shards:  75%|███████▌  | 3/4 [01:46<00:35, 35.58s/it]Loading checkpoint shards: 100%|██████████| 4/4 [02:05<00:00, 29.26s/it]Loading checkpoint shards: 100%|██████████| 4/4 [02:05<00:00, 31.45s/it]
+Model loaded successfully!
+Model ready for inference!
+INFO:     121.236.217.156:7827 - "GET /api/v1/recommend/outfits?user_id=2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7828 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7828 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7829 - "GET /api/v1/recommend/outfits?user_id=2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7830 - "GET /api/v1/recommend/outfits?user_id=2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7830 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7830 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7831 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK
+INFO:     121.236.217.156:7832 - "GET /api/v1/clothes/wardrobe/2 HTTP/1.1" 200 OK

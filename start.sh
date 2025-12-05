@@ -1,4 +1,4 @@
-#\!/bin/bash
+#!/bin/bash
 
 # Fashion Recommendation System Startup Script
 
@@ -14,6 +14,10 @@ pkill -f "node.*vite" 2>/dev/null && echo "  Stopped old frontend" || true
 sleep 2
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LOG_DIR="$PROJECT_DIR/logs"
+mkdir -p "$LOG_DIR"
+BACKEND_LOG="$LOG_DIR/backend.log"
+FRONTEND_LOG="$LOG_DIR/frontend.log"
 
 # Start Backend
 echo ""
@@ -26,17 +30,17 @@ cd "$PROJECT_DIR/backend"
 if [ -f "$HOME/miniconda3/etc/profile.d/conda.sh" ]; then
   . "$HOME/miniconda3/etc/profile.d/conda.sh"
 else
-  echo "ERROR: Conda not found\!"
+  echo "ERROR: Conda not found!"
   exit 1
 fi
 
 conda activate pytorch
-nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 > /tmp/backend.log 2>&1 &
-BACKEND_PID=$\!
+nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 > "$BACKEND_LOG" 2>&1 &
+BACKEND_PID=$!
 
 echo "✓ Backend started (PID: $BACKEND_PID)"
 echo "  API: http://0.0.0.0:8000"
-echo "  Logs: tail -f /tmp/backend.log"
+echo "  Logs: tail -f $BACKEND_LOG"
 echo ""
 echo "  NOTE: Qwen3-VL model loads on first upload (~2 min)"
 
@@ -52,12 +56,12 @@ cd "$PROJECT_DIR/frontend"
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
-nohup npm run dev > /tmp/frontend.log 2>&1 &
-FRONTEND_PID=$\!
+nohup npm run dev > "$FRONTEND_LOG" 2>&1 &
+FRONTEND_PID=$!
 
 echo "✓ Frontend started (PID: $FRONTEND_PID)"
 echo "  URL: http://0.0.0.0:3000"
-echo "  Logs: tail -f /tmp/frontend.log"
+echo "  Logs: tail -f $FRONTEND_LOG"
 
 sleep 5
 
@@ -81,13 +85,12 @@ fi
 # Summary
 echo ""
 echo "================================================"
-echo "  Startup Complete\!"
+echo "  Startup Complete!"
 echo "================================================"
 echo ""
 echo "Access: http://$(hostname -I | awk '{print $1}'):3000"
 echo ""
 echo "Commands:"
 echo "  Stop:  bash stop.sh"
-echo "  Logs:  tail -f /tmp/backend.log /tmp/frontend.log"
+echo "  Logs:  tail -f $BACKEND_LOG $FRONTEND_LOG"
 echo ""
-

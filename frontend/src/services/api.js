@@ -1,9 +1,13 @@
 import axios from 'axios';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
-const api = axios.create({ baseURL: API_BASE_URL, headers: { 'Content-Type': 'application/json' }});
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: { 'Content-Type': 'application/json' },
+});
 
+// Origin base used for static assets (strip trailing /api/v1 if present)
+export const API_ORIGIN = API_BASE_URL.replace(/\/api\/v1$/, '');
 
 // User Authentication
 export const registerUser = async (userData) => {

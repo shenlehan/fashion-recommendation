@@ -1,0 +1,307 @@
+
+> frontend@0.0.0 dev
+> vite
+
+
+  VITE v7.2.4  ready in 114 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: http://172.23.106.144:3000/
+9:18:48 AM [vite] (client) hmr update /src/pages/Wardrobe.jsx
+9:19:03 AM [vite] (client) hmr update /src/pages/Wardrobe.jsx
+9:19:26 AM [vite] (client) hmr update /src/pages/Wardrobe.jsx
+9:25:30 AM [vite] (client) hmr update /src/pages/Recommendations.jsx
+9:25:42 AM [vite] (client) hmr update /src/pages/Recommendations.jsx
+9:25:55 AM [vite] (client) hmr update /src/pages/Recommendations.jsx
+9:26:06 AM [vite] (client) hmr update /src/pages/Recommendations.jsx
+9:26:07 AM [vite] Internal server error: /home/shenlehan/fashion-recommendation/frontend/src/pages/Recommendations.jsx: Unexpected token (2:53)
+
+  1 | import { useState } from 'react';
+> 2 | import { getOutfitRecommendations, API_ORIGIN } from ../services/api;
+    |                                                      ^
+  3 | import './Recommendations.css';
+  4 |
+  5 | function Recommendations({ user }) {
+  Plugin: vite:react-babel
+  File: /home/shenlehan/fashion-recommendation/frontend/src/pages/Recommendations.jsx:2:53
+  1  |  import { useState } from 'react';
+  2  |  import { getOutfitRecommendations, API_ORIGIN } from ../services/api;
+     |                                                       ^
+  3  |  import './Recommendations.css';
+  4  |  
+      at constructor (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:367:19)
+      at JSXParserMixin.raise (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:6624:19)
+      at JSXParserMixin.unexpected (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:6644:16)
+      at JSXParserMixin.parseImportSource (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14334:32)
+      at JSXParserMixin.parseImportSourceAndAttributes (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14325:24)
+      at JSXParserMixin.parseImportSpecifiersAndAfter (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14320:17)
+      at JSXParserMixin.parseImport (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14311:17)
+      at JSXParserMixin.parseStatementContent (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12952:27)
+      at JSXParserMixin.parseStatementLike (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12843:17)
+      at JSXParserMixin.parseModuleItem (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12820:17)
+      at JSXParserMixin.parseBlockOrModuleBlockBody (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:13392:36)
+      at JSXParserMixin.parseBlockBody (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:13385:10)
+      at JSXParserMixin.parseProgram (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12698:10)
+      at JSXParserMixin.parseTopLevel (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12688:25)
+      at JSXParserMixin.parse (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14568:25)
+      at parse (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14602:38)
+      at parser (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/parser/index.js:41:34)
+      at parser.next (<anonymous>)
+      at normalizeFile (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/transformation/normalize-file.js:64:37)
+      at normalizeFile.next (<anonymous>)
+      at run (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/transformation/index.js:22:50)
+      at run.next (<anonymous>)
+      at transform (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/transform.js:22:33)
+      at transform.next (<anonymous>)
+      at step (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:261:32)
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:273:13
+      at async.call.result.err.err (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:223:11)
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:189:28
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/gensync-utils/async.js:67:7
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:113:33
+      at step (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:287:14)
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:273:13
+      at async.call.result.err.err (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:223:11)
+9:26:07 AM [vite] Internal server error: /home/shenlehan/fashion-recommendation/frontend/src/pages/Recommendations.jsx: Unexpected token (2:53)
+
+  1 | import { useState } from 'react';
+> 2 | import { getOutfitRecommendations, API_ORIGIN } from ../services/api;
+    |                                                      ^
+  3 | import './Recommendations.css';
+  4 |
+  5 | function Recommendations({ user }) {
+  Plugin: vite:react-babel
+  File: /home/shenlehan/fashion-recommendation/frontend/src/pages/Recommendations.jsx:2:53
+  1  |  import { useState } from 'react';
+  2  |  import { getOutfitRecommendations, API_ORIGIN } from ../services/api;
+     |                                                       ^
+  3  |  import './Recommendations.css';
+  4  |  
+      at constructor (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:367:19)
+      at JSXParserMixin.raise (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:6624:19)
+      at JSXParserMixin.unexpected (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:6644:16)
+      at JSXParserMixin.parseImportSource (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14334:32)
+      at JSXParserMixin.parseImportSourceAndAttributes (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14325:24)
+      at JSXParserMixin.parseImportSpecifiersAndAfter (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14320:17)
+      at JSXParserMixin.parseImport (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14311:17)
+      at JSXParserMixin.parseStatementContent (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12952:27)
+      at JSXParserMixin.parseStatementLike (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12843:17)
+      at JSXParserMixin.parseModuleItem (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12820:17)
+      at JSXParserMixin.parseBlockOrModuleBlockBody (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:13392:36)
+      at JSXParserMixin.parseBlockBody (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:13385:10)
+      at JSXParserMixin.parseProgram (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12698:10)
+      at JSXParserMixin.parseTopLevel (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12688:25)
+      at JSXParserMixin.parse (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14568:25)
+      at parse (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14602:38)
+      at parser (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/parser/index.js:41:34)
+      at parser.next (<anonymous>)
+      at normalizeFile (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/transformation/normalize-file.js:64:37)
+      at normalizeFile.next (<anonymous>)
+      at run (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/transformation/index.js:22:50)
+      at run.next (<anonymous>)
+      at transform (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/transform.js:22:33)
+      at transform.next (<anonymous>)
+      at step (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:261:32)
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:273:13
+      at async.call.result.err.err (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:223:11)
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:189:28
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/gensync-utils/async.js:67:7
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:113:33
+      at step (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:287:14)
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:273:13
+      at async.call.result.err.err (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:223:11)
+9:26:30 AM [vite] (client) hmr update /src/pages/Recommendations.jsx
+9:26:30 AM [vite] Internal server error: /home/shenlehan/fashion-recommendation/frontend/src/pages/Recommendations.jsx: Unexpected token (2:53)
+
+  1 | import { useState } from 'react';
+> 2 | import { getOutfitRecommendations, API_ORIGIN } from ../services/api;
+    |                                                      ^
+  3 | import './Recommendations.css';
+  4 |
+  5 | function Recommendations({ user }) {
+  Plugin: vite:react-babel
+  File: /home/shenlehan/fashion-recommendation/frontend/src/pages/Recommendations.jsx:2:53
+  1  |  import { useState } from 'react';
+  2  |  import { getOutfitRecommendations, API_ORIGIN } from ../services/api;
+     |                                                       ^
+  3  |  import './Recommendations.css';
+  4  |  
+      at constructor (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:367:19)
+      at JSXParserMixin.raise (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:6624:19)
+      at JSXParserMixin.unexpected (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:6644:16)
+      at JSXParserMixin.parseImportSource (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14334:32)
+      at JSXParserMixin.parseImportSourceAndAttributes (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14325:24)
+      at JSXParserMixin.parseImportSpecifiersAndAfter (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14320:17)
+      at JSXParserMixin.parseImport (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14311:17)
+      at JSXParserMixin.parseStatementContent (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12952:27)
+      at JSXParserMixin.parseStatementLike (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12843:17)
+      at JSXParserMixin.parseModuleItem (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12820:17)
+      at JSXParserMixin.parseBlockOrModuleBlockBody (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:13392:36)
+      at JSXParserMixin.parseBlockBody (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:13385:10)
+      at JSXParserMixin.parseProgram (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12698:10)
+      at JSXParserMixin.parseTopLevel (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12688:25)
+      at JSXParserMixin.parse (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14568:25)
+      at parse (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14602:38)
+      at parser (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/parser/index.js:41:34)
+      at parser.next (<anonymous>)
+      at normalizeFile (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/transformation/normalize-file.js:64:37)
+      at normalizeFile.next (<anonymous>)
+      at run (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/transformation/index.js:22:50)
+      at run.next (<anonymous>)
+      at transform (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/transform.js:22:33)
+      at transform.next (<anonymous>)
+      at step (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:261:32)
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:273:13
+      at async.call.result.err.err (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:223:11)
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:189:28
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/gensync-utils/async.js:67:7
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:113:33
+      at step (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:287:14)
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:273:13
+      at async.call.result.err.err (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:223:11)
+9:26:30 AM [vite] Internal server error: /home/shenlehan/fashion-recommendation/frontend/src/pages/Recommendations.jsx: Unexpected token (2:53)
+
+  1 | import { useState } from 'react';
+> 2 | import { getOutfitRecommendations, API_ORIGIN } from ../services/api;
+    |                                                      ^
+  3 | import './Recommendations.css';
+  4 |
+  5 | function Recommendations({ user }) {
+  Plugin: vite:react-babel
+  File: /home/shenlehan/fashion-recommendation/frontend/src/pages/Recommendations.jsx:2:53
+  1  |  import { useState } from 'react';
+  2  |  import { getOutfitRecommendations, API_ORIGIN } from ../services/api;
+     |                                                       ^
+  3  |  import './Recommendations.css';
+  4  |  
+      at constructor (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:367:19)
+      at JSXParserMixin.raise (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:6624:19)
+      at JSXParserMixin.unexpected (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:6644:16)
+      at JSXParserMixin.parseImportSource (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14334:32)
+      at JSXParserMixin.parseImportSourceAndAttributes (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14325:24)
+      at JSXParserMixin.parseImportSpecifiersAndAfter (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14320:17)
+      at JSXParserMixin.parseImport (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14311:17)
+      at JSXParserMixin.parseStatementContent (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12952:27)
+      at JSXParserMixin.parseStatementLike (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12843:17)
+      at JSXParserMixin.parseModuleItem (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12820:17)
+      at JSXParserMixin.parseBlockOrModuleBlockBody (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:13392:36)
+      at JSXParserMixin.parseBlockBody (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:13385:10)
+      at JSXParserMixin.parseProgram (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12698:10)
+      at JSXParserMixin.parseTopLevel (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12688:25)
+      at JSXParserMixin.parse (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14568:25)
+      at parse (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14602:38)
+      at parser (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/parser/index.js:41:34)
+      at parser.next (<anonymous>)
+      at normalizeFile (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/transformation/normalize-file.js:64:37)
+      at normalizeFile.next (<anonymous>)
+      at run (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/transformation/index.js:22:50)
+      at run.next (<anonymous>)
+      at transform (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/transform.js:22:33)
+      at transform.next (<anonymous>)
+      at step (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:261:32)
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:273:13
+      at async.call.result.err.err (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:223:11)
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:189:28
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/gensync-utils/async.js:67:7
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:113:33
+      at step (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:287:14)
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:273:13
+      at async.call.result.err.err (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:223:11)
+9:27:24 AM [vite] (client) hmr update /src/pages/Recommendations.jsx
+9:27:24 AM [vite] Internal server error: /home/shenlehan/fashion-recommendation/frontend/src/pages/Recommendations.jsx: Expecting Unicode escape sequence \uXXXX. (1:34)
+
+> 1 | import { useState } from 'react';\nimport { getOutfitRecommendations, API_ORIGIN } from ../services/api;\nimport './Recommendations.css';\n\nfunction Recommendations({ user }) {\n  const [recommendations, setRecommendations] = useState(null);\n  const [loading, setLoading] = useState(false);\n  const [error, setError] = useState('');\n  const [preferences, setPreferences] = useState({\n    occasion: '',\n    style: '',\n    color_preference: ''\n  });\n  const [showPreferences, setShowPreferences] = useState(false);\n\n\n  const getImageUrl = (path) => {\n    if (!path) return "";\n    if (path.startsWith("http")) return path;\n    return `${API_ORIGIN}/${path.replace(/^\//, "")}`;\n  };\n  // NOTE: Removed useEffect - no auto-fetching!\n  // Recommendations are only generated when user clicks "Regenerate"\n\n  const fetchRecommendations = async (userPreferences = {}) => {\n    try {\n      setLoading(true);\n      setError('');\n      const data = await getOutfitRecommendations(user.id, userPreferences);\n      setRecommendations(data);\n    } catch (err) {\n      setError(err.response?.data?.detail || 'Failed to load recommendations');\n    } finally {\n      setLoading(false);\n    }\n  };\n\n  const handleRegenerateWithPreferences = () => {\n    const filteredPrefs = Object.fromEntries(\n      Object.entries(preferences).filter(([_, value]) => value !== '')\n    );\n    fetchRecommendations(filteredPrefs);\n    setShowPreferences(false);\n  };\n\n  const handleRegenerate = () => {\n    fetchRecommendations();\n  };\n\n  return (\n    <div className="recommendations-container">\n      <div className="recommendations-header">\n        <h1>Outfit Recommendations</h1>\n        <div className="header-actions">\n          <button\n            className="btn-secondary"\n            onClick={() => setShowPreferences(!showPreferences)}\n            disabled={loading}\n          >\n            {showPreferences ? '隐藏偏好' : '我的偏好风格'}\n          </button>\n          <button className="btn-primary" onClick={handleRegenerate} disabled={loading}>\n          {loading ? 'Loading...' : '生成新推荐'}\n          </button>\n        </div>\n      </div>\n\n      {showPreferences && (\n        <div className="preferences-panel">\n          <h2>自定义穿搭！</h2>\n          <p className="preferences-subtitle">\n            今天你有什么特别想穿的风格呢？\n          </p>\n\n          <div className="preferences-form">\n            <div className="form-group">\n              <label htmlFor="occasion">场合</label>\n              <select\n                id="occasion"\n                value={preferences.occasion}\n                onChange={(e) =>\n                  setPreferences({ ...preferences, occasion: e.target.value })\n                }\n              >\n                <option value="">Any</option>\n                <option value="Casual">随意</option>\n                <option value="Business">商务</option>\n                <option value="Formal"> 正式</option>\n                <option value="Sport/Active"> 运动 </option>\n                <option value="Party">狂野</option>\n              </select>\n            </div>\n\n            <div className="form-group">\n              <label htmlFor="style">风格</label>\n              <select\n                id="style"\n                value={preferences.style}\n                onChange={(e) =>\n                  setPreferences({ ...preferences, style: e.target.value })\n                }\n              >\n                <option value="">Any</option>\n                <option value="classic">Classic</option>\n                <option value="trendy">Trendy</option>\n                <option value="minimalist">Minimalist</option>\n                <option value="bohemian">Bohemian</option>\n                <option value="street">Street Style</option>\n              </select>\n            </div>\n\n            <div className="form-group">\n              <label htmlFor="color_preference">Color Preference</label>\n              <input\n                type="text"\n                id="color_preference"\n                value={preferences.color_preference}\n                onChange={(e) =>\n                  setPreferences({ ...preferences, color_preference: e.target.value })\n                }\n                placeholder="e.g., blue, black, neutral"\n              />\n            </div>\n\n            <button\n              className="btn-primary"\n              onClick={handleRegenerateWithPreferences}\n              disabled={loading}\n            >\n              Apply Preferences\n            </button>\n          </div>\n        </div>\n      )}\n\n      {error && <div className="error-message">{error}</div>}\n\n      {loading ? (\n        <div className="loading">\n          <div className="loading-spinner"></div>\n          <p>推荐生成中...</p>\n          <p className="loading-subtext">This may take 30-60 seconds</p>\n        </div>\n      ) : recommendations ? (\n        <div className="recommendations-content">\n          <div className="weather-info">\n            <h2>Current Weather in {user.city || 'Your City'}</h2>\n            <div className="weather-details">\n              <p>Temperature: {recommendations.weather?.temperature || 'N/A'}°C</p>\n              <p>Condition: {recommendations.weather?.condition || 'N/A'}</p>\n            </div>\n          </div>\n\n          <div className="outfits-section">\n            <h2>Suggested Outfits</h2>\n            {recommendations.outfits && recommendations.outfits.length > 0 ? (\n              <div className="outfits-grid">\n                {recommendations.outfits.map((outfit, index) => (\n                  <div key={index} className="outfit-card">\n                    <h3>Outfit {index + 1}</h3>\n                    <div className="outfit-items">\n                      {outfit.items?.map((item, itemIndex) => (\n                        <div key={itemIndex} className="outfit-item">\n                          <div className="outfit-item-image">\n                            {item.image_path ? (\n                              <img\n                                src={getImageUrl(item.image_path)}\n                                alt={item.name}\n                              />\n                            ) : (\n                              <div className="no-image-small">{item.category}</div>\n                            )}\n                          </div>\n                          <p>{item.name}</p>\n                        </div>\n                      ))}\n                    </div>\n                    {outfit.description && (\n                      <p className="outfit-description">{outfit.description}</p>\n                    )}\n                  </div>\n                ))}\n              </div>\n            ) : (\n              <p className="no-outfits">\n                No outfits suggested. Try adding more items to your wardrobe!\n              </p>\n            )}\n          </div>\n\n          {recommendations.missing_items && recommendations.missing_items.length > 0 && (\n            <div className="missing-items-section">\n              <h2>Suggested Items to Complete Your Wardrobe</h2>\n              <div className="missing-items-list">\n                {recommendations.missing_items.map((item, index) => (\n                  <div key={index} className="missing-item">\n                    <span className="item-icon">🛍️</span>\n                    <div>\n                      <h4>{item.category || item}</h4>\n                      {item.reason && <p>{item.reason}</p>}\n                    </div>\n                  </div>\n                ))}\n              </div>\n            </div>\n          )}\n        </div>\n      ) : (\n        <div className="no-recommendations">\n          <div className="welcome-message">\n            <h2>👔 Get Personalized Outfit Recommendations</h2>\n            <p>Click the <strong>"Regenerate"</strong> button above to get AI-powered outfit suggestions based on:</p>\n            <ul>\n              <li>✅ Your wardrobe items</li>\n              <li>✅ Current weather in {user.city || 'your city'}</li>\n              <li>✅ Your body type and style preferences</li>\n              <li>✅ Complete head-to-toe outfit combinations</li>\n            </ul>\n            <p className="tip">💡 提示: 使用“我的偏好风格”来获得更加个性化的推荐~</p>\n          </div>\n        </div>\n      )}\n    </div>\n  );\n}\n\nexport default Recommendations;\n
+    |                                   ^
+  Plugin: vite:react-babel
+  File: /home/shenlehan/fashion-recommendation/frontend/src/pages/Recommendations.jsx:1:34
+  1  |  import { useState } from 'react';\nimport { getOutfitRecommendations, API_ORIGIN } from ../services/api;\nimport './R...
+     |                                    ^
+      at constructor (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:367:19)
+      at JSXParserMixin.raise (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:6624:19)
+      at JSXParserMixin.readWord1 (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:6584:16)
+      at JSXParserMixin.readWord (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:6604:23)
+      at JSXParserMixin.getTokenFromCode (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:6323:14)
+      at JSXParserMixin.getTokenFromCode (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:4826:11)
+      at JSXParserMixin.nextToken (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:5807:10)
+      at JSXParserMixin.next (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:5717:10)
+      at JSXParserMixin.eat (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:5721:12)
+      at JSXParserMixin.isLineTerminator (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:6916:17)
+      at JSXParserMixin.semicolon (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:6919:25)
+      at JSXParserMixin.parseImportSourceAndAttributes (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14329:10)
+      at JSXParserMixin.parseImportSpecifiersAndAfter (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14320:17)
+      at JSXParserMixin.parseImport (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14311:17)
+      at JSXParserMixin.parseStatementContent (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12952:27)
+      at JSXParserMixin.parseStatementLike (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12843:17)
+      at JSXParserMixin.parseModuleItem (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12820:17)
+      at JSXParserMixin.parseBlockOrModuleBlockBody (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:13392:36)
+      at JSXParserMixin.parseBlockBody (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:13385:10)
+      at JSXParserMixin.parseProgram (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12698:10)
+      at JSXParserMixin.parseTopLevel (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12688:25)
+      at JSXParserMixin.parse (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14568:25)
+      at parse (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14602:38)
+      at parser (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/parser/index.js:41:34)
+      at parser.next (<anonymous>)
+      at normalizeFile (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/transformation/normalize-file.js:64:37)
+      at normalizeFile.next (<anonymous>)
+      at run (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/transformation/index.js:22:50)
+      at run.next (<anonymous>)
+      at transform (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/transform.js:22:33)
+      at transform.next (<anonymous>)
+      at step (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:261:32)
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:273:13
+      at async.call.result.err.err (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:223:11)
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:189:28
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/gensync-utils/async.js:67:7
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:113:33
+      at step (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:287:14)
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:273:13
+      at async.call.result.err.err (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:223:11)
+9:27:24 AM [vite] Internal server error: /home/shenlehan/fashion-recommendation/frontend/src/pages/Recommendations.jsx: Expecting Unicode escape sequence \uXXXX. (1:34)
+
+> 1 | import { useState } from 'react';\nimport { getOutfitRecommendations, API_ORIGIN } from ../services/api;\nimport './Recommendations.css';\n\nfunction Recommendations({ user }) {\n  const [recommendations, setRecommendations] = useState(null);\n  const [loading, setLoading] = useState(false);\n  const [error, setError] = useState('');\n  const [preferences, setPreferences] = useState({\n    occasion: '',\n    style: '',\n    color_preference: ''\n  });\n  const [showPreferences, setShowPreferences] = useState(false);\n\n\n  const getImageUrl = (path) => {\n    if (!path) return "";\n    if (path.startsWith("http")) return path;\n    return `${API_ORIGIN}/${path.replace(/^\//, "")}`;\n  };\n  // NOTE: Removed useEffect - no auto-fetching!\n  // Recommendations are only generated when user clicks "Regenerate"\n\n  const fetchRecommendations = async (userPreferences = {}) => {\n    try {\n      setLoading(true);\n      setError('');\n      const data = await getOutfitRecommendations(user.id, userPreferences);\n      setRecommendations(data);\n    } catch (err) {\n      setError(err.response?.data?.detail || 'Failed to load recommendations');\n    } finally {\n      setLoading(false);\n    }\n  };\n\n  const handleRegenerateWithPreferences = () => {\n    const filteredPrefs = Object.fromEntries(\n      Object.entries(preferences).filter(([_, value]) => value !== '')\n    );\n    fetchRecommendations(filteredPrefs);\n    setShowPreferences(false);\n  };\n\n  const handleRegenerate = () => {\n    fetchRecommendations();\n  };\n\n  return (\n    <div className="recommendations-container">\n      <div className="recommendations-header">\n        <h1>Outfit Recommendations</h1>\n        <div className="header-actions">\n          <button\n            className="btn-secondary"\n            onClick={() => setShowPreferences(!showPreferences)}\n            disabled={loading}\n          >\n            {showPreferences ? '隐藏偏好' : '我的偏好风格'}\n          </button>\n          <button className="btn-primary" onClick={handleRegenerate} disabled={loading}>\n          {loading ? 'Loading...' : '生成新推荐'}\n          </button>\n        </div>\n      </div>\n\n      {showPreferences && (\n        <div className="preferences-panel">\n          <h2>自定义穿搭！</h2>\n          <p className="preferences-subtitle">\n            今天你有什么特别想穿的风格呢？\n          </p>\n\n          <div className="preferences-form">\n            <div className="form-group">\n              <label htmlFor="occasion">场合</label>\n              <select\n                id="occasion"\n                value={preferences.occasion}\n                onChange={(e) =>\n                  setPreferences({ ...preferences, occasion: e.target.value })\n                }\n              >\n                <option value="">Any</option>\n                <option value="Casual">随意</option>\n                <option value="Business">商务</option>\n                <option value="Formal"> 正式</option>\n                <option value="Sport/Active"> 运动 </option>\n                <option value="Party">狂野</option>\n              </select>\n            </div>\n\n            <div className="form-group">\n              <label htmlFor="style">风格</label>\n              <select\n                id="style"\n                value={preferences.style}\n                onChange={(e) =>\n                  setPreferences({ ...preferences, style: e.target.value })\n                }\n              >\n                <option value="">Any</option>\n                <option value="classic">Classic</option>\n                <option value="trendy">Trendy</option>\n                <option value="minimalist">Minimalist</option>\n                <option value="bohemian">Bohemian</option>\n                <option value="street">Street Style</option>\n              </select>\n            </div>\n\n            <div className="form-group">\n              <label htmlFor="color_preference">Color Preference</label>\n              <input\n                type="text"\n                id="color_preference"\n                value={preferences.color_preference}\n                onChange={(e) =>\n                  setPreferences({ ...preferences, color_preference: e.target.value })\n                }\n                placeholder="e.g., blue, black, neutral"\n              />\n            </div>\n\n            <button\n              className="btn-primary"\n              onClick={handleRegenerateWithPreferences}\n              disabled={loading}\n            >\n              Apply Preferences\n            </button>\n          </div>\n        </div>\n      )}\n\n      {error && <div className="error-message">{error}</div>}\n\n      {loading ? (\n        <div className="loading">\n          <div className="loading-spinner"></div>\n          <p>推荐生成中...</p>\n          <p className="loading-subtext">This may take 30-60 seconds</p>\n        </div>\n      ) : recommendations ? (\n        <div className="recommendations-content">\n          <div className="weather-info">\n            <h2>Current Weather in {user.city || 'Your City'}</h2>\n            <div className="weather-details">\n              <p>Temperature: {recommendations.weather?.temperature || 'N/A'}°C</p>\n              <p>Condition: {recommendations.weather?.condition || 'N/A'}</p>\n            </div>\n          </div>\n\n          <div className="outfits-section">\n            <h2>Suggested Outfits</h2>\n            {recommendations.outfits && recommendations.outfits.length > 0 ? (\n              <div className="outfits-grid">\n                {recommendations.outfits.map((outfit, index) => (\n                  <div key={index} className="outfit-card">\n                    <h3>Outfit {index + 1}</h3>\n                    <div className="outfit-items">\n                      {outfit.items?.map((item, itemIndex) => (\n                        <div key={itemIndex} className="outfit-item">\n                          <div className="outfit-item-image">\n                            {item.image_path ? (\n                              <img\n                                src={getImageUrl(item.image_path)}\n                                alt={item.name}\n                              />\n                            ) : (\n                              <div className="no-image-small">{item.category}</div>\n                            )}\n                          </div>\n                          <p>{item.name}</p>\n                        </div>\n                      ))}\n                    </div>\n                    {outfit.description && (\n                      <p className="outfit-description">{outfit.description}</p>\n                    )}\n                  </div>\n                ))}\n              </div>\n            ) : (\n              <p className="no-outfits">\n                No outfits suggested. Try adding more items to your wardrobe!\n              </p>\n            )}\n          </div>\n\n          {recommendations.missing_items && recommendations.missing_items.length > 0 && (\n            <div className="missing-items-section">\n              <h2>Suggested Items to Complete Your Wardrobe</h2>\n              <div className="missing-items-list">\n                {recommendations.missing_items.map((item, index) => (\n                  <div key={index} className="missing-item">\n                    <span className="item-icon">🛍️</span>\n                    <div>\n                      <h4>{item.category || item}</h4>\n                      {item.reason && <p>{item.reason}</p>}\n                    </div>\n                  </div>\n                ))}\n              </div>\n            </div>\n          )}\n        </div>\n      ) : (\n        <div className="no-recommendations">\n          <div className="welcome-message">\n            <h2>👔 Get Personalized Outfit Recommendations</h2>\n            <p>Click the <strong>"Regenerate"</strong> button above to get AI-powered outfit suggestions based on:</p>\n            <ul>\n              <li>✅ Your wardrobe items</li>\n              <li>✅ Current weather in {user.city || 'your city'}</li>\n              <li>✅ Your body type and style preferences</li>\n              <li>✅ Complete head-to-toe outfit combinations</li>\n            </ul>\n            <p className="tip">💡 提示: 使用“我的偏好风格”来获得更加个性化的推荐~</p>\n          </div>\n        </div>\n      )}\n    </div>\n  );\n}\n\nexport default Recommendations;\n
+    |                                   ^
+  Plugin: vite:react-babel
+  File: /home/shenlehan/fashion-recommendation/frontend/src/pages/Recommendations.jsx:1:34
+  1  |  import { useState } from 'react';\nimport { getOutfitRecommendations, API_ORIGIN } from ../services/api;\nimport './R...
+     |                                    ^
+      at constructor (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:367:19)
+      at JSXParserMixin.raise (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:6624:19)
+      at JSXParserMixin.readWord1 (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:6584:16)
+      at JSXParserMixin.readWord (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:6604:23)
+      at JSXParserMixin.getTokenFromCode (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:6323:14)
+      at JSXParserMixin.getTokenFromCode (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:4826:11)
+      at JSXParserMixin.nextToken (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:5807:10)
+      at JSXParserMixin.next (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:5717:10)
+      at JSXParserMixin.eat (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:5721:12)
+      at JSXParserMixin.isLineTerminator (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:6916:17)
+      at JSXParserMixin.semicolon (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:6919:25)
+      at JSXParserMixin.parseImportSourceAndAttributes (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14329:10)
+      at JSXParserMixin.parseImportSpecifiersAndAfter (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14320:17)
+      at JSXParserMixin.parseImport (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14311:17)
+      at JSXParserMixin.parseStatementContent (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12952:27)
+      at JSXParserMixin.parseStatementLike (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12843:17)
+      at JSXParserMixin.parseModuleItem (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12820:17)
+      at JSXParserMixin.parseBlockOrModuleBlockBody (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:13392:36)
+      at JSXParserMixin.parseBlockBody (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:13385:10)
+      at JSXParserMixin.parseProgram (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12698:10)
+      at JSXParserMixin.parseTopLevel (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:12688:25)
+      at JSXParserMixin.parse (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14568:25)
+      at parse (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/parser/lib/index.js:14602:38)
+      at parser (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/parser/index.js:41:34)
+      at parser.next (<anonymous>)
+      at normalizeFile (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/transformation/normalize-file.js:64:37)
+      at normalizeFile.next (<anonymous>)
+      at run (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/transformation/index.js:22:50)
+      at run.next (<anonymous>)
+      at transform (/home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/transform.js:22:33)
+      at transform.next (<anonymous>)
+      at step (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:261:32)
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:273:13
+      at async.call.result.err.err (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:223:11)
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:189:28
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/@babel/core/lib/gensync-utils/async.js:67:7
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:113:33
+      at step (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:287:14)
+      at /home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:273:13
+      at async.call.result.err.err (/home/shenlehan/fashion-recommendation/frontend/node_modules/gensync/index.js:223:11)
+9:28:29 AM [vite] (client) hmr update /src/pages/Recommendations.jsx

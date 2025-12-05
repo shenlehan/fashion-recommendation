@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getOutfitRecommendations } from '../services/api';
+import { getOutfitRecommendations, API_ORIGIN } from '../services/api';
 import './Recommendations.css';
 
 function Recommendations({ user }) {
@@ -13,6 +13,11 @@ function Recommendations({ user }) {
   });
   const [showPreferences, setShowPreferences] = useState(false);
 
+  const getImageUrl = (path) => {
+    if (!path) return '';
+    if (path.startsWith('http')) return path;
+    return `${API_ORIGIN}/${path.replace(/^\//, '')}`;
+  };
   // NOTE: Removed useEffect - no auto-fetching!
   // Recommendations are only generated when user clicks "Regenerate"
 
@@ -54,7 +59,7 @@ function Recommendations({ user }) {
             {showPreferences ? '隐藏偏好' : '我的偏好风格'}
           </button>
           <button className="btn-primary" onClick={handleRegenerate} disabled={loading}>
-          {loading ? 'Loading...' : '生成新推荐'}
+            {loading ? 'Loading...' : '生成新推荐'}
           </button>
         </div>
       </div>
@@ -158,7 +163,7 @@ function Recommendations({ user }) {
                           <div className="outfit-item-image">
                             {item.image_path ? (
                               <img
-                                src={`http://8.153.91.71:8000/${item.image_path}`}
+                                src={getImageUrl(item.image_path)}
                                 alt={item.name}
                               />
                             ) : (
