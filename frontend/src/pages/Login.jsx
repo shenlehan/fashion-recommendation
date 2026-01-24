@@ -29,7 +29,7 @@ function Login({ onLogin }) {
       const userData = await loginUser(username, password);
       onLogin(userData);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Login failed. Please check your credentials.');
+      setError(err.response?.data?.detail || '登录失败。请检查您的凭据。');
     } finally {
       setLoading(false);
     }
@@ -38,15 +38,15 @@ function Login({ onLogin }) {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h1>Login</h1>
-        <p className="auth-subtitle">Welcome back to Fashion Recommender</p>
+        <h1>登录</h1>
+        <p className="auth-subtitle">欢迎回到时尚穿搭推荐系统</p>
 
         {successMessage && <div className="success-message">{successMessage}</div>}
         {error && <div className="error-message">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="username">Username</label>
+            <label htmlFor="username">用户名</label>
             <input
               type="text"
               id="username"
@@ -58,7 +58,7 @@ function Login({ onLogin }) {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">密码</label>
             <input
               type="password"
               id="password"
@@ -70,12 +70,12 @@ function Login({ onLogin }) {
           </div>
 
           <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? '登录中...' : '登录'}
           </button>
         </form>
 
         <p className="auth-footer">
-          Don't have an account? <Link to="/register">Register here</Link>
+          还没有账号？ <Link to="/register">点击注册</Link>
         </p>
       </div>
     </div>

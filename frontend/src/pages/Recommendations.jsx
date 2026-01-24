@@ -18,8 +18,6 @@ function Recommendations({ user }) {
     if (path.startsWith('http')) return path;
     return `${API_ORIGIN}/${path.replace(/^\//, '')}`;
   };
-  // NOTE: Removed useEffect - no auto-fetching!
-  // Recommendations are only generated when user clicks "Regenerate"
 
   const fetchRecommendations = async (userPreferences = {}) => {
     try {
@@ -28,7 +26,7 @@ function Recommendations({ user }) {
       const data = await getOutfitRecommendations(user.id, userPreferences);
       setRecommendations(data);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to load recommendations');
+      setError(err.response?.data?.detail || '加载推荐失败');
     } finally {
       setLoading(false);
     }
@@ -49,7 +47,7 @@ function Recommendations({ user }) {
   return (
     <div className="recommendations-container">
       <div className="recommendations-header">
-        <h1>Outfit Recommendations</h1>
+        <h1>穿搭推荐</h1>
         <div className="header-actions">
           <button
             className="btn-secondary"
@@ -59,7 +57,7 @@ function Recommendations({ user }) {
             {showPreferences ? '隐藏偏好' : '我的偏好风格'}
           </button>
           <button className="btn-primary" onClick={handleRegenerate} disabled={loading}>
-            {loading ? 'Loading...' : '生成新推荐'}
+            {loading ? '生成中...' : '生成新推荐'}
           </button>
         </div>
       </div>
@@ -81,12 +79,12 @@ function Recommendations({ user }) {
                   setPreferences({ ...preferences, occasion: e.target.value })
                 }
               >
-                <option value="">Any</option>
-                <option value="Casual">随意</option>
+                <option value="">不限</option>
+                <option value="Casual">休闲</option>
                 <option value="Business">商务</option>
                 <option value="Formal"> 正式</option>
                 <option value="Sport/Active"> 运动 </option>
-                <option value="Party">狂野</option>
+                <option value="Party">聚会</option>
               </select>
             </div>
 
@@ -99,17 +97,17 @@ function Recommendations({ user }) {
                   setPreferences({ ...preferences, style: e.target.value })
                 }
               >
-                <option value="">Any</option>
-                <option value="classic">Classic</option>
-                <option value="trendy">Trendy</option>
-                <option value="minimalist">Minimalist</option>
-                <option value="bohemian">Bohemian</option>
-                <option value="street">Street Style</option>
+                <option value="">不限</option>
+                <option value="classic">经典 (Classic)</option>
+                <option value="trendy">潮流 (Trendy)</option>
+                <option value="minimalist">简约 (Minimalist)</option>
+                <option value="bohemian">波西米亚 (Bohemian)</option>
+                <option value="street">街头 (Street Style)</option>
               </select>
             </div>
 
             <div className="form-group">
-              <label htmlFor="color_preference">Color Preference</label>
+              <label htmlFor="color_preference">颜色偏好</label>
               <input
                 type="text"
                 id="color_preference"
@@ -117,7 +115,7 @@ function Recommendations({ user }) {
                 onChange={(e) =>
                   setPreferences({ ...preferences, color_preference: e.target.value })
                 }
-                placeholder="e.g., blue, black, neutral"
+                placeholder="例如：蓝色、黑色、素色"
               />
             </div>
 
@@ -126,7 +124,7 @@ function Recommendations({ user }) {
               onClick={handleRegenerateWithPreferences}
               disabled={loading}
             >
-              Apply Preferences
+              应用偏好
             </button>
           </div>
         </div>
@@ -138,25 +136,25 @@ function Recommendations({ user }) {
         <div className="loading">
           <div className="loading-spinner"></div>
           <p>推荐生成中...</p>
-          <p className="loading-subtext">This may take 30-60 seconds</p>
+          <p className="loading-subtext">这可能需要 30-60 秒</p>
         </div>
       ) : recommendations ? (
         <div className="recommendations-content">
           <div className="weather-info">
-            <h2>Current Weather in {user.city || 'Your City'}</h2>
+            <h2>{user.city || '您所在城市'}的当前天气</h2>
             <div className="weather-details">
-              <p>Temperature: {recommendations.weather?.temperature || 'N/A'}°C</p>
-              <p>Condition: {recommendations.weather?.condition || 'N/A'}</p>
+              <p>气温： {recommendations.weather?.temperature || 'N/A'}°C</p>
+              <p>天气状况： {recommendations.weather?.condition || 'N/A'}</p>
             </div>
           </div>
 
           <div className="outfits-section">
-            <h2>Suggested Outfits</h2>
+            <h2>建议搭配</h2>
             {recommendations.outfits && recommendations.outfits.length > 0 ? (
               <div className="outfits-grid">
                 {recommendations.outfits.map((outfit, index) => (
                   <div key={index} className="outfit-card">
-                    <h3>Outfit {index + 1}</h3>
+                    <h3>搭配方案 {index + 1}</h3>
                     <div className="outfit-items">
                       {outfit.items?.map((item, itemIndex) => (
                         <div key={itemIndex} className="outfit-item">
@@ -182,14 +180,14 @@ function Recommendations({ user }) {
               </div>
             ) : (
               <p className="no-outfits">
-                No outfits suggested. Try adding more items to your wardrobe!
+                未生成穿搭建议。请尝试在衣橱中添加更多单品！
               </p>
             )}
           </div>
 
           {recommendations.missing_items && recommendations.missing_items.length > 0 && (
             <div className="missing-items-section">
-              <h2>Suggested Items to Complete Your Wardrobe</h2>
+              <h2>衣橱进阶建议</h2>
               <div className="missing-items-list">
                 {recommendations.missing_items.map((item, index) => (
                   <div key={index} className="missing-item">
@@ -207,13 +205,13 @@ function Recommendations({ user }) {
       ) : (
         <div className="no-recommendations">
           <div className="welcome-message">
-            <h2>👔 Get Personalized Outfit Recommendations</h2>
-            <p>Click the <strong>"Regenerate"</strong> button above to get AI-powered outfit suggestions based on:</p>
+            <h2>👔 获取个性化穿搭推荐</h2>
+            <p>点击上方的 <strong>“生成新推荐”</strong> 按钮，AI 将根据以下内容为您提供建议：</p>
             <ul>
-              <li>✅ Your wardrobe items</li>
-              <li>✅ Current weather in {user.city || 'your city'}</li>
-              <li>✅ Your body type and style preferences</li>
-              <li>✅ Complete head-to-toe outfit combinations</li>
+              <li>✅ 您的衣橱单品</li>
+              <li>✅ {user.city || '您所在城市'}的实时天气</li>
+              <li>✅ 您的体型和风格偏好</li>
+              <li>✅ 完整的全身搭配方案</li>
             </ul>
             <p className="tip">💡 提示: 使用“我的偏好风格”来获得更加个性化的推荐~</p>
           </div>
