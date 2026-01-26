@@ -18,3 +18,7 @@ result_*.png
 test_*.png
 ml/CatVTON/model/SCHP/checkpoints/
 ml/CatVTON/model/DensePose/checkpoints/
+ml/CatVTON/model/DensePose/*.pkl
+ml/CatVTON/model/SCHP/*.pth
+ml/output/
+models/

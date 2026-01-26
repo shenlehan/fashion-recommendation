@@ -1,18 +1,16 @@
 import os
-# 1. 强制镜像加速 (防止重启后环境变量丢失)
+# 1. 强制镜像加速
 os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
-from PIL import Image, ImageFilter
 import sys
 import io
 import uvicorn
 import torch
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFilter, ImageOps
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import Response
 from contextlib import asynccontextmanager
-from transformers import SegformerImageProcessor, AutoModelForSemanticSegmentation
-from diffusers import StableDiffusionLatentUpscalePipeline  # <--- 高清核心组件
+from diffusers import StableDiffusionLatentUpscalePipeline
 
 # --- 路径配置 ---
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -21,58 +19,42 @@ sys.path.append(catvton_path)
 
 try:
     from model.pipeline import CatVTONPipeline
-    print("✅ 成功导入 CatVTONPipeline")
+    from model.cloth_masker import AutoMasker  # 引入最强 Mask 工具
+    print("✅ 成功导入 CatVTONPipeline 和 AutoMasker")
 except ImportError as e:
     print(f"❌ 导入失败: {e}")
     sys.exit(1)
 
 # --- 全局变量 ---
 pipeline = None
-upscaler = None     # <--- 放大模型
-seg_processor = None
-seg_model = None
+automasker = None
+upscaler = None 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-# --- 辅助函数：自动 Mask ---
-def get_accurate_mask(image, category):
-    global seg_processor, seg_model, device
-    inputs = seg_processor(images=image, return_tensors="pt").to(device)
-    with torch.no_grad():
-        outputs = seg_model(**inputs)
-        logits = outputs.logits
-    
-    upsampled_logits = torch.nn.functional.interpolate(
-        logits, size=image.size[::-1], mode="bilinear", align_corners=False,
-    )
-    pred_seg = upsampled_logits.argmax(dim=1)[0]
-    mask_tensor = torch.zeros_like(pred_seg, dtype=torch.float32)
-    
-    # 标签映射
-    if category == "upper_body":
-        target_labels = [4, 14, 15] 
-    elif category == "lower_body":
-        target_labels = [5, 6, 12, 13]
-    elif category == "dresses":
-        target_labels = [4, 5, 7, 12, 13, 14, 15]
-    else:
-        target_labels = [4, 14, 15]
-
-    for label in target_labels:
-        mask_tensor[pred_seg == label] = 1.0
-        
-    mask_np = mask_tensor.cpu().numpy() * 255
-    return Image.fromarray(mask_np.astype(np.uint8)).convert("L")
+# --- 核心辅助函数：防变形缩放 ---
+def resize_and_padding(image, target_size):
+    width, height = target_size
+    w, h = image.size
+    scale = min(width / w, height / h)
+    new_w = int(w * scale)
+    new_h = int(h * scale)
+    image = image.resize((new_w, new_h), Image.LANCZOS)
+    new_image = Image.new("RGB", (width, height), (127, 127, 127))
+    paste_x = (width - new_w) // 2
+    paste_y = (height - new_h) // 2
+    new_image.paste(image, (paste_x, paste_y))
+    return new_image, (paste_x, paste_y, new_w, new_h)
 
 # --- 生命周期 ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global pipeline, upscaler, seg_processor, seg_model
-    print("🚀 正在初始化高清系统...")
+    global pipeline, automasker, upscaler
+    print("🚀 正在初始化 CatVTON 服务器...")
     try:
         # 1. 加载 Inpainting 模型
-        print("Loading CatVTON...")
+        print("Loading CatVTON Pipeline...")
         pipeline = CatVTONPipeline(
-            base_ckpt="runwayml/stable-diffusion-inpainting",
+            base_ckpt="booksforcharlie/stable-diffusion-inpainting",
             attn_ckpt="zhengchong/CatVTON",
             attn_ckpt_version="mix",
             weight_dtype=torch.float16,
@@ -80,27 +62,28 @@ async def lifespan(app: FastAPI):
             skip_safety_check=True
         )
         
-        # 2. 加载放大模型 (关键一步！)
-        print("Loading Upscaler (HD Mode)...")
-        # 如果模型已经下载好，这里会瞬间加载完成
-        upscaler = StableDiffusionLatentUpscalePipeline.from_pretrained(
-            "stabilityai/sd-x2-latent-upscaler",
-            torch_dtype=torch.float16
+        # 2. 加载 AutoMasker (DensePose + SCHP) - 这是质量的关键！
+        print("Loading AutoMasker (High Quality)...")
+        # 假设权重在 CatVTON 目录下，或者自动下载
+        automasker = AutoMasker(
+            densepose_ckpt=os.path.join(current_dir, "CatVTON", "model", "DensePose"),
+            schp_ckpt=os.path.join(current_dir, "CatVTON", "model", "SCHP"),
+            device=device
         )
-        # 显存优化：平时放内存，用时才上显卡，防止显存爆炸
-        upscaler.enable_model_cpu_offload()
 
-        # 3. 加载 SegFormer
-        print("Loading SegFormer...")
-        seg_processor = SegformerImageProcessor.from_pretrained("mattmdjaga/segformer_b2_clothes")
-        seg_model = AutoModelForSemanticSegmentation.from_pretrained("mattmdjaga/segformer_b2_clothes").to(device)
+        # 3. (可选) 加载放大模型
+        # 注意：Paste Back 技术通常比 Upscaler 更有效且省显存，这里先保留但设为可选
+        # print("Loading Upscaler...")
+        # upscaler = StableDiffusionLatentUpscalePipeline.from_pretrained(...)
         
-        print("✨ 高清版服务就绪！支持 1536x2048 分辨率！端口: 8001")
+        print("✨ 服务启动成功！端口: 8001")
     except Exception as e:
         print(f"💥 模型加载崩溃: {e}")
-        raise e
+        import traceback
+        traceback.print_exc()
     yield
-    del pipeline, upscaler, seg_model
+    # 清理
+    del pipeline, automasker
     torch.cuda.empty_cache()
 
 app = FastAPI(lifespan=lifespan)
@@ -109,59 +92,74 @@ app = FastAPI(lifespan=lifespan)
 async def process_tryon(
     person_img: UploadFile = File(...),
     cloth_img: UploadFile = File(...),
-    category: str = Form("upper_body")
+    category: str = Form("upper_body") # 暂时只做上半身，通用性最强
 ):
-    global pipeline, upscaler
-    if pipeline is None:
-        raise HTTPException(status_code=503, detail="Model not loaded")
+    global pipeline, automasker
+    
+    # 调试目录
+    debug_dir = os.path.join(current_dir, "output", "debug_server")
+    os.makedirs(debug_dir, exist_ok=True)
 
     try:
-        print(f"Processing Try-On: category={category}")
+        print(f"Processing Request: category={category}")
         
-        # 1. 读取
-        image = Image.open(io.BytesIO(await person_img.read())).convert("RGB")
-        cloth = Image.open(io.BytesIO(await cloth_img.read())).convert("RGB")
+        # 1. 读取图片
+        person_raw = Image.open(io.BytesIO(await person_img.read())).convert("RGB")
+        cloth_raw = Image.open(io.BytesIO(await cloth_img.read())).convert("RGB")
 
-        # 2. Resize (官方 Demo 标准分辨率)
+        # 2. 智能缩放 (768x1024)
         target_size = (768, 1024)
-        image = image.resize(target_size, Image.Resampling.LANCZOS)
-        cloth = cloth.resize(target_size, Image.Resampling.LANCZOS)
+        person_resized, paste_info = resize_and_padding(person_raw, target_size)
+        cloth_resized, _ = resize_and_padding(cloth_raw, target_size)
+        
+        # 保存一下输入图，方便调试
+        person_resized.save(os.path.join(debug_dir, "input_person.png"))
 
-        # 3. Mask & 关键模糊处理
-        mask = get_accurate_mask(image, category)
-        # 核心优化：高斯模糊，消除贴纸感
-        mask = mask.filter(ImageFilter.GaussianBlur(radius=5)) 
+        # 3. 自动生成高质量 Mask
+        print("🔍 Generating Mask...")
+        mask_result = automasker(person_resized, mask_type='upper')
+        mask = mask_result['mask'] # 这是一个 PIL Image
+        
+        # [关键步骤] 保存 Mask 检查质量
+        mask.save(os.path.join(debug_dir, "generated_mask.png"))
 
-        # 4. 推理 (第一阶段：生成底图)
-        output = pipeline(
-            image=image,
-            condition_image=cloth,
-            mask=mask, 
-            num_inference_steps=50, # 提升至 50 步以获得最佳质感
-            guidance_scale=2.5
-        )
+        # 4. Mask 边缘羽化
+        mask_blurred = mask.filter(ImageFilter.GaussianBlur(radius=5))
 
-        if isinstance(output, list):
-            base_img = output[0]
-        elif hasattr(output, 'images'):
-            base_img = output.images[0]
-        else:
-            base_img = output
+        # 5. 模型推理
+        print("🎨 Diffusion Inference...")
+        generator = torch.Generator(device=device).manual_seed(42)
+        result_image = pipeline(
+            image=person_resized,
+            condition_image=cloth_resized,
+            mask=mask_blurred,
+            num_inference_steps=50, # 保持 50 步
+            guidance_scale=2.5,
+            generator=generator
+        )[0]
+        
+        # 保存直出结果
+        result_image.save(os.path.join(debug_dir, "raw_output.png"))
 
-        # 5. 高清放大 (第二阶段：细节增强)
-        # 注意：如果显存紧张，可以把这步去掉，768x1024 的质量已经很高了
-        print("🔍 正在进行 2x 高清放大...")
-        upscaled_result = upscaler(
-            prompt="",
-            image=base_img,
-            num_inference_steps=20,
-            guidance_scale=0,
-            generator=torch.manual_seed(42)
-        ).images[0]
+        # 6. [核心技术] Paste Back (回贴)
+        # 将生成的衣服融合回原图 (person_resized)，只保留衣服区域
+        # 这样脸部和背景就绝对不会变糊
+        print("🔧 Pasting Back...")
+        
+        # 重新调整 mask 大小用于合成 (mask 也是 768x1024，不用动)
+        mask_for_composite = mask.convert("L")
+        # 稍微腐蚀一点 Mask，防止白边
+        mask_for_composite = mask_for_composite.filter(ImageFilter.GaussianBlur(radius=1))
+        
+        # 组合：Mask 白色区域用新图，黑色区域用原图
+        final_image = Image.composite(result_image, person_resized, mask_for_composite)
+        
+        # (可选) 如果需要还原回用户原始上传图片的尺寸，可以在这里做反向 Crop
+        # 但通常 Web 端展示 768x1024 就够了
 
-        # 6. 返回高清图
+        # 7. 返回结果
         img_byte_arr = io.BytesIO()
-        upscaled_result.save(img_byte_arr, format='PNG')
+        final_image.save(img_byte_arr, format='PNG')
         return Response(content=img_byte_arr.getvalue(), media_type="image/png")
 
     except Exception as e:
