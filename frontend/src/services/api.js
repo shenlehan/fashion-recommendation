@@ -60,12 +60,28 @@ export const getOutfitRecommendations = async (userId, preferences = {}) => {
  */
 export const fetchImageAsBlob = async (url) => {
   try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`无法获取图片: ${response.statusText}`);
+    // 如果是相对路径，补全为完整 URL
+    if (!url.startsWith('http')) {
+        url = `${API_BASE_URL.replace('/api/v1', '')}/${url.replace(/^\//, '')}`;
+    }
+
+    // 添加时间戳防止缓存，设置 mode: 'cors'
+    const corsUrl = `${url}?t=${new Date().getTime()}`;
+    
+    const response = await fetch(corsUrl, {
+      mode: 'cors', // 强制开启 CORS 校验
+      cache: 'no-cache', // 避免读取无 CORS 头的缓存图片
+    });
+
+    if (!response.ok) {
+      throw new Error(`图片下载失败: ${response.status} ${response.statusText}`);
+    }
+    
     return await response.blob();
   } catch (error) {
-    console.error("fetchImageAsBlob Error:", error);
-    throw error;
+    console.error("图片转换 Blob 失败:", error);
+    // 这里抛出更具体的错误，方便你在页面上看到
+    throw new Error(`无法加载衣物图片，请检查跨域设置或图片是否存在。详细: ${error.message}`);
   }
 };
 
