@@ -2,69 +2,93 @@ import axios from 'axios';
 
 // 确保与后端 main.py 的前缀一致
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 });
 
+// 用于静态资源的原始地址（去除后缀）
 export const API_ORIGIN = API_BASE_URL.replace(/\/api\/v1$/, '');
 
-// --- 用户与衣柜管理 (保留原有) ---
+// --- 用户管理 ---
 export const registerUser = async (userData) => {
   const response = await api.post('/users/register', userData);
   return response.data;
 };
+
 export const loginUser = async (username, password) => {
   const response = await api.post('/users/login', { username, password });
   return response.data;
 };
+
 export const getUserProfile = async (userId) => {
   const response = await api.get(`/users/profile?user_id=${userId}`);
   return response.data;
 };
+
+// --- 衣柜管理 ---
 export const uploadClothingItem = async (userId, formData) => {
   const response = await api.post(`/clothes/upload?user_id=${userId}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return response.data;
 };
+
 export const getUserWardrobe = async (userId) => {
   const response = await api.get(`/clothes/wardrobe/${userId}`);
   return response.data;
 };
+
 export const deleteClothingItem = async (itemId) => {
   const response = await api.delete(`/clothes/${itemId}`);
   return response.data;
 };
 
-// --- 推荐功能 (保留原有) ---
+// --- 推荐功能 ---
 export const getOutfitRecommendations = async (userId, preferences = {}) => {
   const params = new URLSearchParams({ user_id: userId, ...preferences });
   const response = await api.get(`/recommend/outfits?${params}`);
   return response.data;
 };
 
-// --- ⚠️ 新增：虚拟试衣核心逻辑 ---
+// --- 虚拟试衣核心逻辑 (CatVTON) ---
 
-// 1. 将衣服 URL 转换为 Blob (解决跨域和文件格式问题)
+/**
+ * 将图片 URL 转换为 Blob
+ * 增加 try-catch 避免因为图片加载失败导致前端白屏
+ */
 export const fetchImageAsBlob = async (url) => {
-  const response = await fetch(url);
-  const blob = await response.blob();
-  return blob;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`无法获取图片: ${response.statusText}`);
+    return await response.blob();
+  } catch (error) {
+    console.error("fetchImageAsBlob Error:", error);
+    throw error;
+  }
 };
 
-// 2. 发起试衣请求
-export const virtualTryOn = async (personImg, clothImg, category = 'upper_body') => {
-  const formData = new FormData();
-  formData.append('person_img', personImg);
-  formData.append('cloth_img', clothImg);
-  formData.append('category', category);
+/**
+ * 发起试衣请求
+ * 确保参数名与后端接收的 key (person_img, cloth_img) 匹配
+ */
+export const virtualTryOn = async (personImgBlob, clothImgBlob, category = 'upper_body') => {
+  try {
+    const formData = new FormData();
+    formData.append('person_img', personImgBlob); 
+    formData.append('cloth_img', clothImgBlob);
+    formData.append('category', category);
 
-  const response = await api.post('/vton/try-on', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-    responseType: 'blob', // 关键：告知接收图片流
-  });
-  return response.data;
+    const response = await api.post('/vton/try-on', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      responseType: 'blob', // 必须设置为 blob 以接收图片流
+    });
+    return response.data;
+  } catch (error) {
+    console.error("virtualTryOn Error:", error);
+    throw error;
+  }
 };
 
 export default api;
