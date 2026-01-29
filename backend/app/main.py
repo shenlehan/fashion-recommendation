@@ -47,7 +47,6 @@ app.include_router(recommendation.router, prefix="/api/v1/recommend", tags=["rec
 # ⚠️ 修改点 2: 注册试衣路由
 # 注意：这里我们用了 /api/vton 前缀，对应前端的调用地址
 app.include_router(vton.router, prefix="/api/vton", tags=["Virtual Try-On"])
-
 # --- 6. 静态文件挂载 ---
 upload_dir = "uploads"
 os.makedirs(upload_dir, exist_ok=True)
