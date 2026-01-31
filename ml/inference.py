@@ -14,27 +14,44 @@ class FashionQwenModel:
   def __init__(self, model_name: str = None):
     if model_name is None:
       project_root = Path(__file__).resolve().parent.parent
-      model_name = str(project_root / "models" / "Qwen" / "Qwen3-VL-8B-Instruct")
+      local_model_path = project_root / "models" / "Qwen" / "Qwen3-VL-8B-Instruct"
+      
+      # 检查本地模型是否存在
+      if local_model_path.exists():
+        model_name = str(local_model_path)
+        use_local_only = True
+        print(f"✅ 找到本地模型: {model_name}")
+      else:
+        # 本地不存在，从 HuggingFace 下载
+        model_name = "Qwen/Qwen3-VL-8B-Instruct"
+        use_local_only = False
+        print(f"⚠️  本地模型不存在，将从 HuggingFace 下载: {model_name}")
+        print(f"📥 首次下载需要约 15GB 空间和 10-30 分钟，请耐心等待...")
+        print(f"💾 模型将缓存到: ~/.cache/huggingface/hub/")
+    else:
+      use_local_only = False
     
     self.device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"Initializing Qwen3-VL on device: {self.device}")
-    print(f"Loading model from: {model_name}")
+    print(f"🔧 初始化 Qwen3-VL，设备: {self.device}")
+    print(f"📂 加载模型: {model_name}")
 
     self.model = AutoModelForImageTextToText.from_pretrained(
       model_name,
       torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
       device_map="auto" if self.device == "cuda" else None,
-      local_files_only=True
+      local_files_only=use_local_only,
+      trust_remote_code=True
     )
     self.processor = AutoProcessor.from_pretrained(
       model_name,
-      local_files_only=True
+      local_files_only=use_local_only,
+      trust_remote_code=True
     )
 
     if self.device == "cpu":
       self.model = self.model.to(self.device)
 
-    print("Model loaded successfully!")
+    print("✅ 模型加载成功！")
 
   def analyze_clothing_image(self, image_path: str) -> Dict[str, Any]:
     messages = [
