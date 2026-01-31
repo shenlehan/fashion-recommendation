@@ -5,7 +5,7 @@ import traceback
 def analyze_clothing_image(image_path: str) -> Dict[str, Any]:
   try:
     print(f"\n{'='*60}")
-    print(f"开始分析衣朏图片: {image_path}")
+    print(f"开始分析衣服图片: {image_path}")
     print(f"{'='*60}")
     
     from ml.inference import predict
@@ -29,7 +29,7 @@ def analyze_clothing_image(image_path: str) -> Dict[str, Any]:
     print(traceback.format_exc())
     print(f"{'='*60}\n")
     
-    print("⚠️  返回默认值，所有衣朏将显示相同标签")
+    print("⚠️  返回默认值，所有衣服将显示相同标签")
     return {
       "category": "top",
       "color": "blue",

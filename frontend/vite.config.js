@@ -16,6 +16,18 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:6008',
         changeOrigin: true,
+        configure: (proxy, options) => {
+          proxy.on('error', (err, req, res) => {
+            console.log('proxy error', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            console.log('Proxying:', req.method, req.url, '-> http://localhost:6008' + req.url);
+          });
+        }
+      },
+      '/uploads': {
+        target: 'http://localhost:6008',
+        changeOrigin: true
       }
     }
   }

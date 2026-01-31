@@ -4,6 +4,9 @@ from typing import Dict, List, Any, Optional
 from pathlib import Path
 import threading
 
+# 设置 HuggingFace 镜像加速
+os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+
 import torch
 from transformers import AutoModelForImageTextToText, AutoProcessor
 from qwen_vl_utils import process_vision_info
@@ -35,12 +38,16 @@ class FashionQwenModel:
     print(f"🔧 初始化 Qwen3-VL，设备: {self.device}")
     print(f"📂 加载模型: {model_name}")
 
+    # 如果 CUDA 可用但还是 Killed，可以尝试强制 device="cpu"
+    # self.device = "cpu" 
+
     self.model = AutoModelForImageTextToText.from_pretrained(
       model_name,
       torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
-      device_map="auto" if self.device == "cuda" else None,
+      device_map={"": self.device}, # 显式映射
       local_files_only=use_local_only,
-      trust_remote_code=True
+      trust_remote_code=True,
+      low_cpu_mem_usage=True
     )
     self.processor = AutoProcessor.from_pretrained(
       model_name,
