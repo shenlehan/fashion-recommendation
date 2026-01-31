@@ -16,12 +16,12 @@ from app.models.user import User
 from app.models.wardrobe import WardrobeItem
 
 # --- 2. 数据库初始化 ---
-print("Creating Database..")
+print("正在创建数据库...")
 Base.metadata.create_all(bind=engine)
-print("Completed!")
+print("完成！")
 
 app = FastAPI(
-  title="Fashion Recommendation API",
+  title="时尚推荐 API",
   description="智能穿搭推荐系统后端服务",
   version="0.1.0",
 )
@@ -55,7 +55,7 @@ app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
 
 @app.get("/")
 async def root():
-  return {"message": "Fashion Recommendation Backend is running!"}
+  return {"message": "时尚推荐系统后端正在运行！"}
 
 
 @app.get("/health")

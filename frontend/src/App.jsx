@@ -32,12 +32,12 @@ function App() {
       <div className="app">
         {user && (
           <nav className="navbar">
-            <div className="nav-brand">Fashion Recommender</div>
+            <div className="nav-brand">时尚推荐系统</div>
             <div className="nav-links">
-              <Link to="/wardrobe">My Wardrobe</Link>
-              <Link to="/recommendations">Get Recommendations</Link>
-              <span className="user-info">Hello, {user.username}!</span>
-              <button onClick={handleLogout} className="btn-logout">Logout</button>
+              <Link to="/wardrobe">我的衣橱</Link>
+              <Link to="/recommendations">获取推荐</Link>
+              <span className="user-info">你好，{user.username}！</span>
+              <button onClick={handleLogout} className="btn-logout">退出</button>
             </div>
           </nav>
         )}

@@ -30,7 +30,7 @@ function Register({ onLogin }) {
     setSuccess(false);
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError('两次输入的密码不一致');
       return;
     }
 
@@ -54,11 +54,11 @@ function Register({ onLogin }) {
       // Redirect to login page after 1.5 seconds
       setTimeout(() => {
         console.log('Navigating to login...');
-        navigate('/login', { state: { message: 'Registration successful! Please log in.' } });
+        navigate('/login', { state: { message: '注册成功！请登录' } });
       }, 1500);
     } catch (err) {
       console.error('Registration error:', err);
-      const errorMsg = err.response?.data?.detail || err.message || 'Registration failed. Please try again.';
+      const errorMsg = err.response?.data?.detail || err.message || '注册失败，请重试';
       setError(errorMsg);
       setLoading(false);
     }
@@ -67,15 +67,15 @@ function Register({ onLogin }) {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h1>Register</h1>
-        <p className="auth-subtitle">Create your Fashion Recommender account</p>
+        <h1>注册</h1>
+        <p className="auth-subtitle">创建你的时尚推荐账号</p>
 
         {error && <div className="error-message">{error}</div>}
-        {success && <div className="success-message">Registration successful! Redirecting to login...</div>}
+        {success && <div className="success-message">注册成功！正在跳转到登录页...</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="username">Username *</label>
+            <label htmlFor="username">用户名 *</label>
             <input
               type="text"
               id="username"
@@ -88,7 +88,7 @@ function Register({ onLogin }) {
           </div>
 
           <div className="form-group">
-            <label htmlFor="email">Email *</label>
+            <label htmlFor="email">邮箱 *</label>
             <input
               type="email"
               id="email"
@@ -101,7 +101,7 @@ function Register({ onLogin }) {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password *</label>
+            <label htmlFor="password">密码 *</label>
             <input
               type="password"
               id="password"
@@ -114,7 +114,7 @@ function Register({ onLogin }) {
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password *</label>
+            <label htmlFor="confirmPassword">确认密码 *</label>
             <input
               type="password"
               id="confirmPassword"
@@ -127,7 +127,7 @@ function Register({ onLogin }) {
           </div>
 
           <div className="form-group">
-            <label htmlFor="body_type">Body Type</label>
+            <label htmlFor="body_type">体型</label>
             <select
               id="body_type"
               name="body_type"
@@ -135,35 +135,35 @@ function Register({ onLogin }) {
               onChange={handleChange}
               disabled={loading}
             >
-              <option value="">Select body type</option>
-              <option value="slim">Slim</option>
-              <option value="athletic">Athletic</option>
-              <option value="average">Average</option>
-              <option value="curvy">Curvy</option>
-              <option value="plus-size">Plus Size</option>
+              <option value="">选择体型</option>
+              <option value="slim">偏瘦</option>
+              <option value="athletic">健美</option>
+              <option value="average">标准</option>
+              <option value="curvy">丰满</option>
+              <option value="plus-size">大码</option>
             </select>
           </div>
 
           <div className="form-group">
-            <label htmlFor="city">City</label>
+            <label htmlFor="city">城市</label>
             <input
               type="text"
               id="city"
               name="city"
               value={formData.city}
               onChange={handleChange}
-              placeholder="For weather-based recommendations"
+              placeholder="用于天气推荐"
               disabled={loading}
             />
           </div>
 
           <button type="submit" className="btn-primary" disabled={loading || success}>
-            {loading ? 'Creating account...' : success ? 'Redirecting...' : 'Register'}
+            {loading ? '创建账号中...' : success ? '跳转中...' : '注册'}
           </button>
         </form>
 
         <p className="auth-footer">
-          Already have an account? <Link to="/login">Login here</Link>
+          已有账号？<Link to="/login">立即登录</Link>
         </p>
       </div>
     </div>

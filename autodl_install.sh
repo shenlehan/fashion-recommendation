@@ -125,8 +125,26 @@ cd CatVTON
 pip install -r requirements.txt -i $PIP_INDEX
 
 echo "安装 detectron2 (用于 DensePose)..."
-pip install 'git+https://github.com/facebookresearch/detectron2.git' || \
-pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu121/torch2.4/index.html
+# 方法1: 尝试预编译包
+if pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu121/torch2.4/index.html 2>/dev/null; then
+    echo "✓ 使用预编译包安装成功"
+else
+    # 方法2: 从清华镜像 GitHub 克隆编译
+    echo "预编译包失败，尝试源码编译..."
+    cd /tmp
+    git clone https://github.com.cnpmjs.org/facebookresearch/detectron2.git || \
+    git clone https://gitclone.com/github.com/facebookresearch/detectron2.git || \
+    git clone https://hub.fastgit.xyz/facebookresearch/detectron2.git
+    
+    if [ -d "/tmp/detectron2" ]; then
+        cd detectron2
+        python -m pip install -e .
+        echo "✓ 源码编译安装成功"
+    else
+        echo "⚠ detectron2 安装失败，VTON功能可能受影响"
+        echo "   可以稍后手动安装: pip install detectron2"
+    fi
+fi
 
 echo "✓ VTON 服务依赖安装完成"
 

@@ -39,7 +39,7 @@ async def try_on_proxy(
             
             if response.status_code != 200:
                 logger.error(f"ML 服务报错: {response.text}")
-                raise HTTPException(status_code=response.status_code, detail="AI 生成失败，请稍后再试")
+                raise HTTPException(status_code=response.status_code, detail="AI 生成失败，请稍后重试")
             
             # 4. 直接把生成的图片透传回给前端
             return Response(content=response.content, media_type="image/png")

@@ -28,7 +28,7 @@ def generate_outfit_recommendations(
     return {
       "outfits": [
         {"items": wardrobe_items[:2] if len(wardrobe_items) >= 2 else wardrobe_items,
-         "description": "Fallback recommendation due to model error"},
+         "description": "系统降级推荐（模型错误）"},
       ],
-      "missing_items": [{"category": "accessories", "reason": "Enhance your wardrobe"}]
+      "missing_items": [{"category": "accessories", "reason": "丰富你的衣橱"}]
     }

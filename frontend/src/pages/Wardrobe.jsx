@@ -24,7 +24,7 @@ function Wardrobe({ user }) {
       setWardrobe(items);
       setError("");
     } catch (err) {
-      setError("Failed to load wardrobe");
+      setError("加载衣橱失败");
     } finally {
       setLoading(false);
     }
@@ -40,7 +40,7 @@ function Wardrobe({ user }) {
   const handleUploadSubmit = async (e) => {
     e.preventDefault();
     if (!uploadForm.file) {
-      setError("Please select a file");
+      setError("请选择文件");
       return;
     }
 
@@ -57,14 +57,14 @@ function Wardrobe({ user }) {
       setShowUploadForm(false);
       fetchWardrobe(); // Refresh wardrobe
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to upload item");
+      setError(err.response?.data?.detail || "上传失败");
     } finally {
       setUploading(false);
     }
   };
 
   const handleDelete = async (itemId) => {
-    if (!window.confirm("Are you sure you want to delete this item?")) {
+    if (!window.confirm("确定要删除这件衣物吗？")) {
       return;
     }
 
@@ -72,7 +72,7 @@ function Wardrobe({ user }) {
       await deleteClothingItem(itemId);
       fetchWardrobe(); // Refresh wardrobe
     } catch (err) {
-      setError("Failed to delete item");
+      setError("删除失败");
     }
   };
 
@@ -85,12 +85,12 @@ function Wardrobe({ user }) {
   return (
     <div className="wardrobe-container">
       <div className="wardrobe-header">
-        <h1>My Wardrobe</h1>
+        <h1>我的衣橱</h1>
         <button
           className="btn-primary"
           onClick={() => setShowUploadForm(!showUploadForm)}
         >
-          {showUploadForm ? "Cancel" : "+ Add Item"}
+          {showUploadForm ? "取消" : "+ 添加衣物"}
         </button>
       </div>
 
@@ -98,22 +98,22 @@ function Wardrobe({ user }) {
 
       {showUploadForm && (
         <div className="upload-form">
-          <h2>Upload Clothing Item</h2>
+          <h2>上传衣物</h2>
           <form onSubmit={handleUploadSubmit}>
             <div className="form-group">
-              <label htmlFor="name">Item Name</label>
+              <label htmlFor="name">衣物名称</label>
               <input
                 type="text"
                 id="name"
                 value={uploadForm.name}
                 onChange={(e) => setUploadForm({ ...uploadForm, name: e.target.value })}
-                placeholder="e.g., Blue Denim Jacket"
+                placeholder="例如：蓝色牛仔夹克"
                 disabled={uploading}
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="file">Upload Image *</label>
+              <label htmlFor="file">上传图片 *</label>
               <input
                 type="file"
                 id="file"
@@ -123,22 +123,22 @@ function Wardrobe({ user }) {
                 disabled={uploading}
               />
               {uploadForm.file && (
-                <p className="file-preview">Selected: {uploadForm.file.name}</p>
+                <p className="file-preview">已选择：{uploadForm.file.name}</p>
               )}
             </div>
 
             <button type="submit" className="btn-primary" disabled={uploading}>
-              {uploading ? "Uploading..." : "Upload Item"}
+              {uploading ? "上传中..." : "上传衣物"}
             </button>
           </form>
         </div>
       )}
 
       {loading ? (
-        <div className="loading">Loading wardrobe...</div>
+        <div className="loading">加载中...</div>
       ) : wardrobe.length === 0 ? (
         <div className="empty-wardrobe">
-          <p>Your wardrobe is empty. Start by adding your first clothing item!</p>
+          <p>你的衣橱还是空的，快来添加第一件衣物吧！</p>
         </div>
       ) : (
         <div className="wardrobe-grid">
@@ -151,22 +151,22 @@ function Wardrobe({ user }) {
                     alt={item.name}
                   />
                 ) : (
-                  <div className="no-image">No Image</div>
+                  <div className="no-image">无图片</div>
                 )}
               </div>
               <div className="item-details">
                 <h3>{item.name}</h3>
                 <div className="item-info">
-                  <span className="badge">{item.category || "Unknown"}</span>
+                  <span className="badge">{item.category || "未知"}</span>
                   {item.color && <span className="badge color">{item.color}</span>}
                 </div>
-                {item.season && <p className="season">Season: {item.season}</p>}
-                {item.material && <p className="material">Material: {item.material}</p>}
+                {item.season && <p className="season">季节：{item.season}</p>}
+                {item.material && <p className="material">材质：{item.material}</p>}
                 <button
                   className="btn-delete"
                   onClick={() => handleDelete(item.id)}
                 >
-                  Delete
+                  删除
                 </button>
               </div>
             </div>
