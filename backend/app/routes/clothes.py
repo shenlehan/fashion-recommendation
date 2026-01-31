@@ -13,12 +13,22 @@ def upload_clothing(
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
+  print(f"\n{'='*60}")
+  print(f"收到上传请求")
+  print(f"user_id: {user_id}")
+  print(f"filename: {file.filename}")
+  print(f"content_type: {file.content_type}")
+  print(f"{'='*60}\n")
+  
   import os
   upload_dir = "uploads"
   os.makedirs(upload_dir, exist_ok=True)
   file_path = os.path.join(upload_dir, file.filename)
+  
+  print(f"保存文件到: {file_path}")
   with open(file_path, "wb") as f:
     f.write(file.file.read())
+  print(f"✅ 文件保存成功")
 
   # Analyze image with Qwen model
   attributes = analyze_clothing_image(file_path)
@@ -42,6 +52,8 @@ def upload_clothing(
   db.add(db_item)
   db.commit()
   db.refresh(db_item)
+  
+  print(f"✅ 数据库保存成功, item_id: {db_item.id}")
   return {"message": "上传成功！", "item_id": db_item.id}
 
 

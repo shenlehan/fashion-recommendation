@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>后端连通性测试</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-section {
+      background: white;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    .result {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+    .success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔧 AutoDL 后端连通性测试</h1>
+  
+  <div class="test-section">
+    <h3>1. 测试后端健康检查</h3>
+    <button onclick="testHealth()">测试 /health</button>
+    <button onclick="testRoot()">测试 / (根路径)</button>
+    <div id="health-result" class="result"></div>
+  </div>
+
+  <div class="test-section">
+    <h3>2. 测试 API 地址配置</h3>
+    <button onclick="checkConfig()">检查前端配置</button>
+    <div id="config-result" class="result"></div>
+  </div>
+
+  <div class="test-section">
+    <h3>3. 测试文件上传接口</h3>
+    <input type="file" id="test-file" accept="image/*">
+    <button onclick="testUpload()">测试上传</button>
+    <div id="upload-result" class="result"></div>
+  </div>
+
+  <script>
+    // 从 Vite 环境变量读取 API 地址
+    const API_BASE = 'http://localhost:6008';
+    
+    function showResult(elementId, message, type = 'info') {
+      const el = document.getElementById(elementId);
+      el.className = `result ${type}`;
+      el.textContent = message;
+    }
+
+    async function testHealth() {
+      showResult('health-result', '正在测试...', 'info');
+      try {
+        const response = await fetch(`${API_BASE}/health`);
+        const data = await response.json();
+        showResult('health-result', 
+          `✅ 后端健康检查成功！\n响应: ${JSON.stringify(data, null, 2)}\n状态码: ${response.status}`, 
+          'success'
+        );
+      } catch (error) {
+        showResult('health-result', 
+          `❌ 后端连接失败！
+错误: ${error.message}
+
+检查项：
+1. 后端是否启动？运行: ps aux | grep uvicorn
+2. 端口是否正确？应该是 6008
+3. 防火墙是否开放？`, 
+          'error'
+        );
+      }
+    }
+
+    async function testRoot() {
+      showResult('health-result', '正在测试...', 'info');
+      try {
+        const response = await fetch(`${API_BASE}/`);
+        const data = await response.json();
+        showResult('health-result', 
+          `✅ 根路径访问成功！\n响应: ${JSON.stringify(data, null, 2)}`, 
+          'success'
+        );
+      } catch (error) {
+        showResult('health-result', 
+          `❌ 根路径访问失败！\n错误: ${error.message}`, 
+          'error'
+        );
+      }
+    }
+
+    function checkConfig() {
+      const info = `
+当前配置信息：
+===================
+API_BASE: ${API_BASE}
+API_BASE_URL: ${API_BASE}/api/v1
+
+上传接口完整地址: ${API_BASE}/api/v1/clothes/upload
+
+请确认：
+1. 后端在 0.0.0.0:6008 监听
+2. Vite proxy 配置正确
+3. CORS 白名单包含前端地址
+      `;
+      showResult('config-result', info, 'info');
+    }
+
+    async function testUpload() {
+      const fileInput = document.getElementById('test-file');
+      if (!fileInput.files.length) {
+        showResult('upload-result', '请先选择一个图片文件', 'error');
+        return;
+      }
+
+      showResult('upload-result', '正在上传...', 'info');
+      
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      
+      try {
+        const response = await fetch(`${API_BASE}/api/v1/clothes/upload?user_id=1`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          showResult('upload-result', 
+            `✅ 上传成功！\n响应: ${JSON.stringify(data, null, 2)}`, 
+            'success'
+          );
+        } else {
+          showResult('upload-result', 
+            `❌ 上传失败！\n状态码: ${response.status}\n响应: ${JSON.stringify(data, null, 2)}`, 
+            'error'
+          );
+        }
+      } catch (error) {
+        showResult('upload-result', 
+          `❌ 上传请求失败！
+错误: ${error.message}
+
+可能原因：
+1. 后端未启动
+2. 端口配置错误
+3. CORS 问题`, 
+          'error'
+        );
+      }
+    }
+
+    // 页面加载时自动测试
+    window.onload = () => {
+      checkConfig();
+    };
+  </script>
+</body>
+</html>
