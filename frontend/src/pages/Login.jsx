@@ -29,7 +29,7 @@ function Login({ onLogin }) {
       const userData = await loginUser(username, password);
       onLogin(userData);
     } catch (err) {
-      setError(err.response?.data?.detail || '登录失败。请检查您的凭据。');
+      setError(err.response?.data?.detail || '登录失败，请检查用户名和密码');
     } finally {
       setLoading(false);
     }
@@ -39,7 +39,7 @@ function Login({ onLogin }) {
     <div className="auth-container">
       <div className="auth-card">
         <h1>登录</h1>
-        <p className="auth-subtitle">欢迎回到时尚穿搭推荐系统</p>
+        <p className="auth-subtitle">欢迎回到时尚推荐系统</p>
 
         {successMessage && <div className="success-message">{successMessage}</div>}
         {error && <div className="error-message">{error}</div>}
@@ -75,7 +75,7 @@ function Login({ onLogin }) {
         </form>
 
         <p className="auth-footer">
-          还没有账号？ <Link to="/register">点击注册</Link>
+          还没有账号？<Link to="/register">立即注册</Link>
         </p>
       </div>
     </div>

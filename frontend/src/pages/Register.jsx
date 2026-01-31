@@ -30,7 +30,7 @@ function Register({ onLogin }) {
     setSuccess(false);
 
     if (formData.password !== formData.confirmPassword) {
-      setError('两次输入的密码不匹配');
+      setError('两次输入的密码不一致');
       return;
     }
 
@@ -54,11 +54,18 @@ function Register({ onLogin }) {
       // Redirect to login page after 1.5 seconds
       setTimeout(() => {
         console.log('Navigating to login...');
-        navigate('/login', { state: { message: '注册成功！请登录。' } });
+        navigate('/login', { state: { message: '注册成功！请登录' } });
       }, 1500);
     } catch (err) {
       console.error('Registration error:', err);
-      const errorMsg = err.response?.data?.detail || err.message || '注册失败。请重试。';
+      let errorMsg = '注册失败，请重试';
+      
+      if (err.code === 'ERR_NETWORK' || !err.response) {
+        errorMsg = err.message || '网络连接失败，请检查后端服务是否启动';
+      } else if (err.response?.data?.detail) {
+        errorMsg = err.response.data.detail;
+      }
+      
       setError(errorMsg);
       setLoading(false);
     }
@@ -68,10 +75,10 @@ function Register({ onLogin }) {
     <div className="auth-container">
       <div className="auth-card">
         <h1>注册</h1>
-        <p className="auth-subtitle">创建您的时尚穿搭推荐系统账号</p>
+        <p className="auth-subtitle">创建你的时尚推荐账号</p>
 
         {error && <div className="error-message">{error}</div>}
-        {success && <div className="success-message">注册成功！正在跳转至登录页面...</div>}
+        {success && <div className="success-message">注册成功！正在跳转到登录页...</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -88,7 +95,7 @@ function Register({ onLogin }) {
           </div>
 
           <div className="form-group">
-            <label htmlFor="email">电子邮箱 *</label>
+            <label htmlFor="email">邮箱 *</label>
             <input
               type="email"
               id="email"
@@ -136,11 +143,11 @@ function Register({ onLogin }) {
               disabled={loading}
             >
               <option value="">选择体型</option>
-              <option value="slim">苗条 (Slim)</option>
-              <option value="athletic">健壮 (Athletic)</option>
-              <option value="average">匀称 (Average)</option>
-              <option value="curvy">丰满 (Curvy)</option>
-              <option value="plus-size">大码 (Plus Size)</option>
+              <option value="slim">偏瘦</option>
+              <option value="athletic">健美</option>
+              <option value="average">标准</option>
+              <option value="curvy">丰满</option>
+              <option value="plus-size">大码</option>
             </select>
           </div>
 
@@ -152,18 +159,18 @@ function Register({ onLogin }) {
               name="city"
               value={formData.city}
               onChange={handleChange}
-              placeholder="用于提供基于天气的穿搭推荐"
+              placeholder="用于天气推荐"
               disabled={loading}
             />
           </div>
 
           <button type="submit" className="btn-primary" disabled={loading || success}>
-            {loading ? '正在创建账号...' : success ? '正在跳转...' : '注册'}
+            {loading ? '创建账号中...' : success ? '跳转中...' : '注册'}
           </button>
         </form>
 
         <p className="auth-footer">
-          已有账号？ <Link to="/login">点击登录</Link>
+          已有账号？<Link to="/login">立即登录</Link>
         </p>
       </div>
     </div>

@@ -4,29 +4,29 @@ from app.models.wardrobe import WardrobeItem
 
 
 def init_database():
-  print("Creating database...")
+  print("正在创建数据库...")
   try:
     Base.metadata.create_all(bind=engine)
-    print("Completed!")
-    print("Created：fashion.db")
+    print("完成！")
+    print("已创建：fashion.db")
 
     from sqlalchemy import inspect
     inspector = inspect(engine)
     tables = inspector.get_table_names()
-    print(f"Current tables：{tables}")
+    print(f"当前表：{tables}")
 
     if 'users' in tables:
-      print("users already exists!")
+      print("users 表已存在！")
     else:
-      print("users doesn't exists!")
+      print("users 表不存在！")
 
     if 'wardrobe_items' in tables:
-      print("wardrobe_items already exists!")
+      print("wardrobe_items 表已存在！")
     else:
-      print("wardrobe_items doesn't exists!")
+      print("wardrobe_items 表不存在！")
 
   except Exception as e:
-    print(f"Fail to create {e}")
+    print(f"创建失败：{e}")
     import traceback
     traceback.print_exc()
 

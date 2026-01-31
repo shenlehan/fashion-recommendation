@@ -42,7 +42,7 @@ def upload_clothing(
   db.add(db_item)
   db.commit()
   db.refresh(db_item)
-  return {"message": "Upload Successfully!", "item_id": db_item.id}
+  return {"message": "上传成功！", "item_id": db_item.id}
 
 
 @router.get("/wardrobe/{user_id}")
@@ -55,7 +55,7 @@ def get_wardrobe(user_id: int, db: Session = Depends(get_db)):
 def delete_clothing_item(item_id: int, db: Session = Depends(get_db)):
   item = db.query(WardrobeItem).filter(WardrobeItem.id == item_id).first()
   if not item:
-    return {"error": "Item not found"}
+    return {"error": "未找到该衣物"}
 
   import os
   if item.image_path and os.path.exists(item.image_path):
@@ -63,4 +63,4 @@ def delete_clothing_item(item_id: int, db: Session = Depends(get_db)):
 
   db.delete(item)
   db.commit()
-  return {"message": "Item deleted successfully"}
+  return {"message": "删除成功"}

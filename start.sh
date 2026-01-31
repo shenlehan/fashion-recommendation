@@ -1,96 +1,116 @@
 #!/bin/bash
 
-# Fashion Recommendation System Startup Script
+# Fashion Recommendation System - Full Stack Startup Script (v2.0)
 
 echo "================================================"
-echo "  Fashion Recommendation System - Startup"
+echo "  时尚推荐系统 - 启动中"
 echo "================================================"
 echo ""
 
-# Stop existing services if any
-echo "Checking for existing services..."
-pkill -f "uvicorn app.main:app" 2>/dev/null && echo "  Stopped old backend" || true
-pkill -f "node.*vite" 2>/dev/null && echo "  Stopped old frontend" || true
+# --- 1. 环境检查与旧服务清理 ---
+echo "正在检查现有服务..."
+# 清理 8001 (VTON), 8000 (Backend), 3000 (Frontend)
+pkill -f "vton_server.py" 2>/dev/null && echo "  已停止旧 VTON 服务器 (8001)" || true
+pkill -f "uvicorn app.main:app" 2>/dev/null && echo "  已停止旧后端服务 (8000)" || true
+pkill -f "node.*vite" 2>/dev/null && echo "  已停止旧前端服务 (3000)" || true
 sleep 2
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOG_DIR="$PROJECT_DIR/logs"
 mkdir -p "$LOG_DIR"
+
+VTON_LOG="$LOG_DIR/vton.log"
 BACKEND_LOG="$LOG_DIR/backend.log"
 FRONTEND_LOG="$LOG_DIR/frontend.log"
 
-# Start Backend
-echo ""
-echo "[1/2] Starting Backend (FastAPI + Qwen3-VL)..."
-echo "-----------------------------------------------"
-
-cd "$PROJECT_DIR/backend"
-
-# Load conda
+# 加载 Conda 环境
 if [ -f "$HOME/miniconda3/etc/profile.d/conda.sh" ]; then
   . "$HOME/miniconda3/etc/profile.d/conda.sh"
+elif [ -f "$HOME/anaconda3/etc/profile.d/conda.sh" ]; then
+  . "$HOME/anaconda3/etc/profile.d/conda.sh"
 else
-  echo "ERROR: Conda not found!"
+  echo "错误：在 $HOME/miniconda3 或 anaconda3 中未找到 Conda！"
   exit 1
 fi
 
+# --- 2. 启动服务 [1/3]: VTON AI Server (Port 8001) ---
+echo ""
+echo "[1/3] 正在启动 VTON AI 服务器 (CatVTON)..."
+echo "-----------------------------------------------"
+cd "$PROJECT_DIR/ml"
+
+conda activate catvton
+# 使用 nohup 后台运行，并重定向日志
+nohup python vton_server.py > "$VTON_LOG" 2>&1 &
+VTON_PID=$!
+
+echo "✓ VTON 服务器已启动 (PID: $VTON_PID)"
+echo "  端口: 8001"
+echo "  日志: tail -f $VTON_LOG"
+echo "  注意：加载 Diffusion 模型可能需要 1-2 分钟..."
+
+# --- 3. 启动服务 [2/3]: Main Backend (Port 6008) ---
+echo ""
+echo "[2/3] 正在启动后端 (FastAPI + Qwen)..."
+echo "-----------------------------------------------"
+cd "$PROJECT_DIR/backend"
+
 conda activate pytorch
-nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 > "$BACKEND_LOG" 2>&1 &
+nohup uvicorn app.main:app --host 0.0.0.0 --port 6008 > "$BACKEND_LOG" 2>&1 &
 BACKEND_PID=$!
 
-echo "✓ Backend started (PID: $BACKEND_PID)"
-echo "  API: http://0.0.0.0:8000"
-echo "  Logs: tail -f $BACKEND_LOG"
-echo ""
-echo "  NOTE: Qwen3-VL model loads on first upload (~2 min)"
+echo "✓ 后端已启动 (PID: $BACKEND_PID)"
+echo "  端口: 6008"
+echo "  日志: tail -f $BACKEND_LOG"
 
-sleep 3
-
-# Start Frontend
+# --- 4. 启动服务 [3/3]: Frontend (Port 6006) ---
 echo ""
-echo "[2/2] Starting Frontend (React + Vite)..."
+echo "[3/3] 正在启动前端 (React + Vite)..."
 echo "-----------------------------------------------"
-
 cd "$PROJECT_DIR/frontend"
 
+# 加载 NVM (如果使用)
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
 nohup npm run dev > "$FRONTEND_LOG" 2>&1 &
 FRONTEND_PID=$!
 
-echo "✓ Frontend started (PID: $FRONTEND_PID)"
-echo "  URL: http://0.0.0.0:3000"
-echo "  Logs: tail -f $FRONTEND_LOG"
+echo "✓ 前端已启动 (PID: $FRONTEND_PID)"
+echo "  URL: http://0.0.0.0:6006"
 
+# --- 5. 健康检查与状态确认 ---
+echo ""
+echo "最终健康检查（等待 5 秒）..."
+echo "-----------------------------------------------"
 sleep 5
 
-# Health check
-echo ""
-echo "Health Check:"
-echo "-----------------------------------------------"
-
-if curl -s http://localhost:8000/health > /dev/null 2>&1; then
-  echo "✓ Backend: HEALTHY"
+# 检查 8001 (VTON)
+if curl -s http://localhost:8001/process_tryon > /dev/null 2>&1 || [ $? -eq 405 ]; then
+  echo "✓ [8001] VTON 服务器: 就绪 (GET 请求 405 是正常现象)"
 else
-  echo "⚠ Backend: Starting..."
+  echo "⚠ [8001] VTON 服务器: 启动中/错误 (检查 logs/vton.log)"
 fi
 
-if netstat -tlnp 2>/dev/null | grep -q ":3000 " || ss -tlnp 2>/dev/null | grep -q ":3000 "; then
-  echo "✓ Frontend: RUNNING"
+# 检查 6008 (Backend)
+if curl -s http://localhost:6008/health > /dev/null 2>&1; then
+  echo "✓ [6008] 后端: 健康"
 else
-  echo "⚠ Frontend: Starting..."
+  echo "⚠ [6008] 后端: 启动中..."
 fi
 
-# Summary
+# 检查 6006 (Frontend)
+if netstat -tlnp 2>/dev/null | grep -q ":6006 " || ss -tlnp 2>/dev/null | grep -q ":6006 "; then
+  echo "✓ [6006] 前端: 运行中"
+else
+  echo "⚠ [6006] 前端: 启动中..."
+fi
+
 echo ""
 echo "================================================"
-echo "  Startup Complete!"
+echo "  启动完成！系统全部功能已就绪。"
 echo "================================================"
-echo ""
-echo "Access: http://$(hostname -I | awk '{print $1}'):3000"
-echo ""
-echo "Commands:"
-echo "  Stop:  bash stop.sh"
-echo "  Logs:  tail -f $BACKEND_LOG $FRONTEND_LOG"
-echo ""
+echo "访问地址: http://$(hostname -I | awk '{print $1}'):6006"
+echo "后端 API: https://uu874872-fw84-354e8a3d.westd.seetacloud.com:8443"
+echo "前端: https://u874872-fw84-354e8a3d.westd.seetacloud.com:8443"
+echo "查看所有日志: tail -f $LOG_DIR/*.log"

@@ -40,7 +40,7 @@ function Wardrobe({ user }) {
   const handleUploadSubmit = async (e) => {
     e.preventDefault();
     if (!uploadForm.file) {
-      setError("请选择一个文件");
+      setError("请选择文件");
       return;
     }
 
@@ -57,14 +57,14 @@ function Wardrobe({ user }) {
       setShowUploadForm(false);
       fetchWardrobe(); // Refresh wardrobe
     } catch (err) {
-      setError(err.response?.data?.detail || "上传单品失败");
+      setError(err.response?.data?.detail || "上传失败");
     } finally {
       setUploading(false);
     }
   };
 
   const handleDelete = async (itemId) => {
-    if (!window.confirm("确定要删除这件衣服吗？")) {
+    if (!window.confirm("确定要删除这件衣物吗？")) {
       return;
     }
 
@@ -90,7 +90,7 @@ function Wardrobe({ user }) {
           className="btn-primary"
           onClick={() => setShowUploadForm(!showUploadForm)}
         >
-          {showUploadForm ? "取消" : "+ 添加单品"}
+          {showUploadForm ? "取消" : "+ 添加衣物"}
         </button>
       </div>
 
@@ -98,16 +98,16 @@ function Wardrobe({ user }) {
 
       {showUploadForm && (
         <div className="upload-form">
-          <h2>上传服装单品</h2>
+          <h2>上传衣物</h2>
           <form onSubmit={handleUploadSubmit}>
             <div className="form-group">
-              <label htmlFor="name">单品名称</label>
+              <label htmlFor="name">衣物名称</label>
               <input
                 type="text"
                 id="name"
                 value={uploadForm.name}
                 onChange={(e) => setUploadForm({ ...uploadForm, name: e.target.value })}
-                placeholder="例如：深蓝牛仔夹克"
+                placeholder="例如：蓝色牛仔夹克"
                 disabled={uploading}
               />
             </div>
@@ -123,22 +123,22 @@ function Wardrobe({ user }) {
                 disabled={uploading}
               />
               {uploadForm.file && (
-                <p className="file-preview">已选择： {uploadForm.file.name}</p>
+                <p className="file-preview">已选择：{uploadForm.file.name}</p>
               )}
             </div>
 
             <button type="submit" className="btn-primary" disabled={uploading}>
-              {uploading ? "正在上传..." : "上传单品"}
+              {uploading ? "上传中..." : "上传衣物"}
             </button>
           </form>
         </div>
       )}
 
       {loading ? (
-        <div className="loading">正在加载衣橱...</div>
+        <div className="loading">加载中...</div>
       ) : wardrobe.length === 0 ? (
         <div className="empty-wardrobe">
-          <p>您的衣橱是空的。快来添加您的第一件衣服吧！</p>
+          <p>你的衣橱还是空的，快来添加第一件衣物吧！</p>
         </div>
       ) : (
         <div className="wardrobe-grid">
@@ -151,7 +151,7 @@ function Wardrobe({ user }) {
                     alt={item.name}
                   />
                 ) : (
-                  <div className="no-image">暂无图片</div>
+                  <div className="no-image">无图片</div>
                 )}
               </div>
               <div className="item-details">
@@ -160,8 +160,8 @@ function Wardrobe({ user }) {
                   <span className="badge">{item.category || "未知"}</span>
                   {item.color && <span className="badge color">{item.color}</span>}
                 </div>
-                {item.season && <p className="season">季节： {item.season}</p>}
-                {item.material && <p className="material">材质： {item.material}</p>}
+                {item.season && <p className="season">季节：{item.season}</p>}
+                {item.material && <p className="material">材质：{item.material}</p>}
                 <button
                   className="btn-delete"
                   onClick={() => handleDelete(item.id)}

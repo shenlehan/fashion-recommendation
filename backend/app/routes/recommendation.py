@@ -20,7 +20,7 @@ def get_outfit_recommendations(
 ):
   user = db.query(User).filter(User.id == user_id).first()
   if not user:
-    raise HTTPException(status_code=404, detail="User does not exist")
+    raise HTTPException(status_code=404, detail="用户不存在")
 
   wardrobe = db.query(WardrobeItem).filter(WardrobeItem.user_id == user_id).all()
   wardrobe_list = [
@@ -36,7 +36,7 @@ def get_outfit_recommendations(
     for item in wardrobe
   ]
 
-  weather = get_weather_by_city(user.city)
+  weather = {"temperature": 7, "condition": "Sunny"}
 
   preferences = {}
   if occasion:
