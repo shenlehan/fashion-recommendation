@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getUserWardrobe, uploadClothingItem, deleteClothingItem, API_ORIGIN } from "../services/api";
+import { getUserWardrobe, uploadClothingItem, uploadClothingBatch, deleteClothingItem, API_ORIGIN } from "../services/api";
 import "./Wardrobe.css";
 
 // ===== 中英文映射字典 =====
@@ -38,9 +38,9 @@ function Wardrobe({ user }) {
   const [error, setError] = useState("");
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [uploadForm, setUploadForm] = useState({
-    name: "",
-    file: null
+    files: []
   });
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
 
   useEffect(() => {
     fetchWardrobe();
@@ -60,35 +60,104 @@ function Wardrobe({ user }) {
   };
 
   const handleFileChange = (e) => {
+    const selectedFiles = Array.from(e.target.files);
     setUploadForm({
       ...uploadForm,
-      file: e.target.files[0]
+      files: selectedFiles
     });
   };
 
   const handleUploadSubmit = async (e) => {
     e.preventDefault();
-    if (!uploadForm.file) {
+    if (uploadForm.files.length === 0) {
       setError("请选择文件");
       return;
     }
 
     setUploading(true);
     setError("");
+    setUploadProgress({ current: 0, total: uploadForm.files.length });
 
     try {
       const formData = new FormData();
-      formData.append("file", uploadForm.file);
-      formData.append("name", uploadForm.name || uploadForm.file.name);
-
-      await uploadClothingItem(user.id, formData);
-      setUploadForm({ name: "", file: null });
-      setShowUploadForm(false);
-      fetchWardrobe(); // Refresh wardrobe
+      
+      // 批量上传：使用SSE实时进度
+      if (uploadForm.files.length > 1) {
+        uploadForm.files.forEach(file => {
+          formData.append("files", file);
+        });
+        
+        // 使用EventSource监听SSE
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:6008/api/v1';
+        const url = `${API_BASE_URL}/clothes/upload-batch-stream?user_id=${user.id}`;
+        
+        // 使用fetch手动处理SSE
+        const response = await fetch(url, {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        
+        let finalResult = { success: [], failed: [] };
+        
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop(); // 保留未完成的行
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = JSON.parse(line.substring(6));
+              
+              if (data.type === 'start') {
+                setUploadProgress({ current: 0, total: data.total });
+              } else if (data.type === 'progress') {
+                setUploadProgress({ current: data.current, total: data.total });
+              } else if (data.type === 'complete') {
+                finalResult = data;
+                setUploadProgress({ current: data.total, total: data.total });
+              }
+            }
+          }
+        }
+        
+        // 显示结果
+        if (finalResult.failed.length > 0) {
+          const failedNames = finalResult.failed.map(f => f.filename).join(", ");
+          setError(`部分失败：${failedNames}`);
+        }
+        
+        if (finalResult.success.length > 0) {
+          setUploadForm({ files: [] });
+          setShowUploadForm(false);
+          fetchWardrobe();
+        }
+      } else {
+        // 单个上传
+        setUploadProgress({ current: 0, total: 1 });
+        formData.append("file", uploadForm.files[0]);
+        await uploadClothingItem(user.id, formData);
+        setUploadProgress({ current: 1, total: 1 });
+        setUploadForm({ files: [] });
+        setShowUploadForm(false);
+        fetchWardrobe();
+      }
     } catch (err) {
-      setError(err.response?.data?.detail || "上传失败");
+      console.error('上传错误:', err);
+      setError(err.message || "上传失败");
     } finally {
       setUploading(false);
+      setTimeout(() => setUploadProgress({ current: 0, total: 0 }), 1000);
     }
   };
 
@@ -134,37 +203,51 @@ function Wardrobe({ user }) {
       {showUploadForm && (
         <div className="upload-form">
           <h2>上传衣物</h2>
+          <p className="upload-hint">🤖 AI 将自动识别并命名衣物，支持批量上传</p>
           <form onSubmit={handleUploadSubmit}>
-            <div className="form-group">
-              <label htmlFor="name">衣物名称</label>
-              <input
-                type="text"
-                id="name"
-                value={uploadForm.name}
-                onChange={(e) => setUploadForm({ ...uploadForm, name: e.target.value })}
-                placeholder="例如：蓝色牛仔夹克"
-                disabled={uploading}
-              />
-            </div>
-
             <div className="form-group">
               <label htmlFor="file">上传图片 *</label>
               <input
                 type="file"
                 id="file"
                 accept="image/*"
+                multiple
                 onChange={handleFileChange}
                 required
                 disabled={uploading}
               />
-              {uploadForm.file && (
-                <p className="file-preview">已选择：{uploadForm.file.name}</p>
+              {uploadForm.files.length > 0 && (
+                <div className="file-preview-list">
+                  <p className="file-count">已选择 {uploadForm.files.length} 个文件</p>
+                  <ul>
+                    {uploadForm.files.map((file, idx) => (
+                      <li key={idx}>{file.name}</li>
+                    ))}
+                  </ul>
+                </div>
               )}
             </div>
 
             <button type="submit" className="btn-primary" disabled={uploading}>
-              {uploading ? "上传中..." : "上传衣物"}
+              {uploading 
+                ? `正在处理 ${uploadProgress.current}/${uploadProgress.total} 个文件...` 
+                : `上传 ${uploadForm.files.length || ''} 件衣物`
+              }
             </button>
+            
+            {uploading && uploadProgress.total > 0 && (
+              <div className="upload-progress">
+                <div className="progress-bar">
+                  <div 
+                    className="progress-fill" 
+                    style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                  ></div>
+                </div>
+                <p className="progress-text">
+                  {uploadProgress.current}/{uploadProgress.total} 完成
+                </p>
+              </div>
+            )}
           </form>
         </div>
       )}

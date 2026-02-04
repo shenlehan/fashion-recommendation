@@ -54,6 +54,14 @@ export const uploadClothingItem = async (userId, formData) => {
   return response.data;
 };
 
+export const uploadClothingBatch = async (userId, formData) => {
+  const response = await api.post(`/clothes/upload-batch?user_id=${userId}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 300000, // 5分钟超时，批量上传需要更长时间
+  });
+  return response.data;
+};
+
 export const getUserWardrobe = async (userId) => {
   const response = await api.get(`/clothes/wardrobe/${userId}`);
   return response.data;
