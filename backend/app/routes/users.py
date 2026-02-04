@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.user import User
-from app.schemas.user import UserCreate, UserLogin, UserResponse
+from app.schemas.user import UserCreate, UserLogin, UserResponse, UserUpdate
 
 router = APIRouter()
 
@@ -21,8 +21,8 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     username=user.username,
     email=user.email,
     hashed_password=user.password,
-    body_type=user.body_type,
-    city=user.city
+    body_type=user.body_type if user.body_type else None,
+    city=user.city if user.city else None
   )
   db.add(db_user)
   db.commit()
@@ -48,4 +48,21 @@ def get_user_profile(user_id: int, db: Session = Depends(get_db)):
   user = db.query(User).filter(User.id == user_id).first()
   if not user:
     raise HTTPException(status_code=404, detail="用户不存在")
+  return user
+
+
+@router.put("/profile", response_model=UserResponse)
+def update_user_profile(user_id: int, user_update: UserUpdate, db: Session = Depends(get_db)):
+  user = db.query(User).filter(User.id == user_id).first()
+  if not user:
+    raise HTTPException(status_code=404, detail="用户不存在")
+  
+  # 更新字段
+  if user_update.body_type is not None:
+    user.body_type = user_update.body_type
+  if user_update.city is not None:
+    user.city = user_update.city
+  
+  db.commit()
+  db.refresh(user)
   return user

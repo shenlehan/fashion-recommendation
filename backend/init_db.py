@@ -4,8 +4,13 @@ from app.models.wardrobe import WardrobeItem
 
 
 def init_database():
-  print("正在创建数据库...")
+  print("正在重建数据库...")
   try:
+    # 删除所有表
+    Base.metadata.drop_all(bind=engine)
+    print("已删除旧表")
+    
+    # 重新创建所有表
     Base.metadata.create_all(bind=engine)
     print("完成！")
     print("已创建：fashion_recommendation.db")

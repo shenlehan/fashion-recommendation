@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Wardrobe from './pages/Wardrobe';
 import Recommendations from './pages/Recommendations';
+import Profile from './pages/Profile';
 import './App.css'
 
 function App() {
@@ -22,6 +23,12 @@ function App() {
     localStorage.setItem('user', JSON.stringify(userData));
   };
 
+  const handleUpdateUser = (updatedUserData) => {
+    const mergedUser = { ...user, ...updatedUserData };
+    setUser(mergedUser);
+    localStorage.setItem('user', JSON.stringify(mergedUser));
+  };
+
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('user');
@@ -36,6 +43,7 @@ function App() {
             <div className="nav-links">
               <Link to="/wardrobe">我的衣橱</Link>
               <Link to="/recommendations">获取推荐</Link>
+              <Link to="/profile">个人资料</Link>
               <span className="user-info">你好，{user.username}！</span>
               <button onClick={handleLogout} className="btn-logout">退出</button>
             </div>
@@ -58,6 +66,10 @@ function App() {
           <Route
             path="/recommendations"
             element={user ? <Recommendations user={user} /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/profile"
+            element={user ? <Profile user={user} onUpdateUser={handleUpdateUser} /> : <Navigate to="/login" />}
           />
           <Route
             path="/"

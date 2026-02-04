@@ -9,9 +9,7 @@ function Register({ onLogin }) {
     username: '',
     email: '',
     password: '',
-    confirmPassword: '',
-    body_type: '',
-    city: ''
+    confirmPassword: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -41,9 +39,7 @@ function Register({ onLogin }) {
       const result = await registerUser({
         username: formData.username,
         email: formData.email,
-        password: formData.password,
-        body_type: formData.body_type || null,
-        city: formData.city || null
+        password: formData.password
       });
       console.log('Registration successful:', result);
 
@@ -129,37 +125,6 @@ function Register({ onLogin }) {
               value={formData.confirmPassword}
               onChange={handleChange}
               required
-              disabled={loading}
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="body_type">体型</label>
-            <select
-              id="body_type"
-              name="body_type"
-              value={formData.body_type}
-              onChange={handleChange}
-              disabled={loading}
-            >
-              <option value="">选择体型</option>
-              <option value="slim">偏瘦</option>
-              <option value="athletic">健美</option>
-              <option value="average">标准</option>
-              <option value="curvy">丰满</option>
-              <option value="plus-size">大码</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="city">城市</label>
-            <input
-              type="text"
-              id="city"
-              name="city"
-              value={formData.city}
-              onChange={handleChange}
-              placeholder="用于天气推荐"
               disabled={loading}
             />
           </div>

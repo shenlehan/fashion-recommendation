@@ -46,6 +46,11 @@ export const getUserProfile = async (userId) => {
   return response.data;
 };
 
+export const updateUserProfile = async (userId, updateData) => {
+  const response = await api.put(`/users/profile?user_id=${userId}`, updateData);
+  return response.data;
+};
+
 // --- 衣柜管理 ---
 export const uploadClothingItem = async (userId, formData) => {
   const response = await api.post(`/clothes/upload?user_id=${userId}`, formData, {
