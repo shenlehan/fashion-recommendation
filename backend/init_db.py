@@ -8,7 +8,7 @@ def init_database():
   try:
     Base.metadata.create_all(bind=engine)
     print("完成！")
-    print("已创建：fashion.db")
+    print("已创建：fashion_recommendation.db")
 
     from sqlalchemy import inspect
     inspector = inspect(engine)

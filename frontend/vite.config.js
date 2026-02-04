@@ -9,8 +9,9 @@ export default defineConfig({
     port: 6006,
     strictPort: true,
     allowedHosts: [
-      'u874872-fw84-354e8a3d.westd.seetacloud.com',
-      '.seetacloud.com'
+      '.gpuhub.com',
+      '.seetacloud.com',
+      '.autodl.com'
     ],
     proxy: {
       '/api': {

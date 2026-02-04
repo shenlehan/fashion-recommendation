@@ -14,13 +14,15 @@ class Settings(BaseSettings):
     "http://0.0.0.0:6006",
     "http://172.17.0.4:3000",
     "http://172.17.0.4:6006",
-    "https://u874872-fw84-354e8a3d.westd.seetacloud.com:8443",
-    "https://uu874872-fw84-354e8a3d.westd.seetacloud.com:8443",
-    "https://u874872-fw84-354e8a3d.westd.seetacloud.com:6006",
-    "http://u874872-fw84-354e8a3d.westd.seetacloud.com:6006",
+    "https://*.gpuhub.com:8443",
+    "https://*.seetacloud.com:8443",
+    "https://*.autodl.com:8443",
+    "http://*.gpuhub.com:6006",
+    "http://*.seetacloud.com:6006",
+    "http://*.autodl.com:6006",
     "*",
   ]
-  DATABASE_URL: str = "sqlite:///./fashion.db"
+  DATABASE_URL: str = "sqlite:///./fashion_recommendation.db"
 
 
 settings = Settings()

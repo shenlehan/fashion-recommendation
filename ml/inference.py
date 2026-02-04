@@ -71,22 +71,25 @@ class FashionQwenModel:
           },
           {
             "type": "text",
-            "text": """You are an expert fashion analyst. Carefully examine this clothing item and provide accurate details in JSON format.
+            "text": """Analyze this clothing item and return JSON.
 
-INSTRUCTIONS:
-- Identify the PRIMARY color (not patterns or secondary colors)
-- Determine the exact category from these options: top, bottom, dress, outerwear, shoes, accessories
-- List ALL suitable seasons based on the material and style
-- Identify the fabric/material type
+RULES:
+1. name, color, material: Output in CHINESE (中文)
+2. category: Choose ONE from [top, bottom, dress, outerwear, shoes, accessories]
+3. season: Select ALL applicable from [spring, summer, fall, winter]
 
-Be precise and objective. Respond ONLY with the JSON object:
+FORMAT:
+- name: 颜色+材质+类型 (例: "藏青色牛仔夹克")
+- color: 主色调中文名 (例: "藏青色", "米白色", "草编色")
+- material: 面料中文名 (例: "牛仔布", "羊羔毛绒", "人造绒面革")
 
+JSON:
 {
-  "name": "[descriptive name for this item - e.g., \"Navy Blue Denim Jacket\", \"Gray Wool Coat\", \"Black Leather Boots\"]",
-  "category": "[top/bottom/dress/outerwear/shoes/accessories]",
-  "color": "[exact primary color name - be specific: e.g., navy blue, light gray, burgundy]",
-  "season": ["spring", "summer", "fall", "winter"],
-  "material": "[specific fabric type: cotton, denim, wool, leather, polyester, silk, etc.]"
+  "name": "藏青色牛仔夹克",
+  "category": "outerwear",
+  "color": "藏青色",
+  "season": ["spring", "fall"],
+  "material": "牛仔布"
 }"""
           }
         ],
@@ -141,10 +144,11 @@ Be precise and objective. Respond ONLY with the JSON object:
     except json.JSONDecodeError:
       print(f"Failed to parse JSON: {output_text}")
       return {
+        "name": "未知衣物",
         "category": "unknown",
-        "color": "unknown",
+        "color": "未知颜色",
         "season": "spring,summer,fall,winter",
-        "material": "unknown"
+        "material": "未知材质"
       }
 
   def generate_outfit_recommendation(
@@ -179,51 +183,34 @@ Be precise and objective. Respond ONLY with the JSON object:
       if pref_parts:
         pref_text = f"\n\nUser Preferences:\n" + "\n".join(pref_parts)
 
-    prompt = f"""You are a professional fashion stylist. Create complete outfit recommendations from HEAD TO TOE based on the following information:
+    prompt = f"""Create outfit recommendations based on:
 
-User Profile:
-{user_text}
-
-Current Weather:
-{weather_text}
-
-Available Wardrobe Items:
+USER: {user_text}
+WEATHER: {weather_text}
+WARDROBE:
 {wardrobe_text}{pref_text}
 
-IMPORTANT INSTRUCTIONS:
-1. Create 2-3 COMPLETE outfit combinations (from shoes/footwear to outerwear/accessories)
-2. Each outfit MUST include items from different categories when possible:
-   - Footwear (shoes, boots, sneakers)
-   - Bottoms (pants, jeans, skirts, shorts)
-   - Tops (shirts, blouses, t-shirts)
-   - Outerwear (jackets, coats, cardigans) if weather appropriate
-   - Accessories (bags, hats, scarves) if available
-3. Reference items by their numbers from the wardrobe list
-4. Ensure outfits are weather-appropriate and match the user's style
-5. Provide styling tips for each complete outfit
+RULES:
+1. Generate 2-3 complete outfits (shoes to outerwear)
+2. Use item numbers from wardrobe list
+3. Match weather and style preferences
+4. Provide styling tips in description
 
-For missing items analysis:
-- Identify gaps across ALL categories (shoes, bottoms, tops, outerwear, accessories)
-- Prioritize essential items needed for complete outfits
-- Consider weather requirements and versatility
-
-Respond in this JSON format:
+JSON:
 {{
   "outfits": [
     {{
-      "items": [list of item numbers from wardrobe - aim for 3-5 items per outfit],
-      "description": "detailed description of the complete outfit from shoes to top, including styling tips"
+      "items": [1, 3, 5],
+      "description": "Complete outfit description with styling tips"
     }}
   ],
   "missing_items": [
     {{
-      "category": "specific item type (e.g., \"black leather boots\", \"blue jeans\", \"light jacket\")",
-      "reason": "why this item would complete your wardrobe or enable new outfit combinations"
+      "category": "Specific item (e.g., black boots)",
+      "reason": "Why needed"
     }}
   ]
-}}
-
-Only respond with the JSON object."""
+}}"""
 
     messages = [
       {

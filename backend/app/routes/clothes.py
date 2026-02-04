@@ -65,14 +65,30 @@ def get_wardrobe(user_id: int, db: Session = Depends(get_db)):
 
 @router.delete("/{item_id}")
 def delete_clothing_item(item_id: int, db: Session = Depends(get_db)):
+  print(f"\n{'='*60}")
+  print(f"收到删除请求, item_id: {item_id}")
+  
   item = db.query(WardrobeItem).filter(WardrobeItem.id == item_id).first()
   if not item:
-    return {"error": "未找到该衣物"}
+    print(f"❌ 未找到 item_id={item_id} 的衣物")
+    print(f"{'='*60}\n")
+    from fastapi import HTTPException
+    raise HTTPException(status_code=404, detail="未找到该衣物")
 
+  print(f"找到衣物: {item.name}, 图片路径: {item.image_path}")
+  
   import os
   if item.image_path and os.path.exists(item.image_path):
-    os.remove(item.image_path)
+    try:
+      os.remove(item.image_path)
+      print(f"✅ 已删除图片文件: {item.image_path}")
+    except Exception as e:
+      print(f"⚠️  删除图片文件失败: {e}")
+  else:
+    print(f"⚠️  图片文件不存在: {item.image_path}")
 
   db.delete(item)
   db.commit()
+  print(f"✅ 数据库记录删除成功")
+  print(f"{'='*60}\n")
   return {"message": "删除成功"}

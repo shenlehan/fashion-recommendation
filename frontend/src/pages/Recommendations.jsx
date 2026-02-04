@@ -2,6 +2,21 @@ import { useState } from 'react';
 import { getOutfitRecommendations, API_ORIGIN, virtualTryOn, fetchImageAsBlob } from '../services/api';
 import './Recommendations.css';
 
+// ===== 中英文映射字典 =====
+const CATEGORY_MAP = {
+  'top': '上装',
+  'bottom': '下装',
+  'dress': '连衣裙',
+  'outerwear': '外套',
+  'shoes': '鞋履',
+  'accessories': '配饰',
+  'unknown': '未知'
+};
+
+const translateCategory = (category) => {
+  return CATEGORY_MAP[category?.toLowerCase()] || category || '未分类';
+};
+
 function Recommendations({ user }) {
   // --- 原有状态 ---
   const [recommendations, setRecommendations] = useState(null);
@@ -266,7 +281,7 @@ function Recommendations({ user }) {
                                 </button>
                               </>
                             ) : (
-                              <div className="no-image-small">{item.category}</div>
+                              <div className="no-image-small">{translateCategory(item.category)}</div>
                             )}
                           </div>
                           <p>{item.name}</p>
@@ -291,7 +306,7 @@ function Recommendations({ user }) {
                   <div key={index} className="missing-item">
                     <span className="item-icon">🛍️</span>
                     <div>
-                      <h4>{item.category || item}</h4>
+                      <h4>{typeof item === 'string' ? translateCategory(item) : translateCategory(item.category)}</h4>
                       {item.reason && <p>{item.reason}</p>}
                     </div>
                   </div>

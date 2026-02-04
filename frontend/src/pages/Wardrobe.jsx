@@ -2,6 +2,35 @@ import { useState, useEffect } from "react";
 import { getUserWardrobe, uploadClothingItem, deleteClothingItem, API_ORIGIN } from "../services/api";
 import "./Wardrobe.css";
 
+// ===== 中英文映射字典 =====
+const CATEGORY_MAP = {
+  'top': '上装',
+  'bottom': '下装',
+  'dress': '连衣裙',
+  'outerwear': '外套',
+  'shoes': '鞋履',
+  'accessories': '配饰',
+  'unknown': '未知'
+};
+
+const SEASON_MAP = {
+  'spring': '春季',
+  'summer': '夏季',
+  'fall': '秋季',
+  'winter': '冬季'
+};
+
+const translateCategory = (category) => {
+  return CATEGORY_MAP[category?.toLowerCase()] || category || '未分类';
+};
+
+const translateSeasons = (seasonStr) => {
+  if (!seasonStr) return '未知';
+  return seasonStr.split(',')
+    .map(s => SEASON_MAP[s.trim().toLowerCase()] || s.trim())
+    .join('、');
+};
+
 function Wardrobe({ user }) {
   const [wardrobe, setWardrobe] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -69,10 +98,16 @@ function Wardrobe({ user }) {
     }
 
     try {
-      await deleteClothingItem(itemId);
+      console.log('开始删除衣物, ID:', itemId);
+      const result = await deleteClothingItem(itemId);
+      console.log('删除成功:', result);
       fetchWardrobe(); // Refresh wardrobe
     } catch (err) {
-      setError("删除失败");
+      console.error('删除失败详情:', err);
+      console.error('响应数据:', err.response?.data);
+      console.error('响应状态:', err.response?.status);
+      const errorMsg = err.response?.data?.detail || err.response?.data?.error || err.message || '删除失败';
+      setError(`删除失败: ${errorMsg}`);
     }
   };
 
@@ -157,10 +192,10 @@ function Wardrobe({ user }) {
               <div className="item-details">
                 <h3>{item.name}</h3>
                 <div className="item-info">
-                  <span className="badge">{item.category || "未知"}</span>
+                  <span className="badge">{translateCategory(item.category)}</span>
                   {item.color && <span className="badge color">{item.color}</span>}
                 </div>
-                {item.season && <p className="season">季节：{item.season}</p>}
+                {item.season && <p className="season">季节：{translateSeasons(item.season)}</p>}
                 {item.material && <p className="material">材质：{item.material}</p>}
                 <button
                   className="btn-delete"
