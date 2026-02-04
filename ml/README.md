@@ -1,51 +1,51 @@
-# Fashion Recommendation ML Module
+# Fashion Recommendation ML 模块
 
-This module uses **Qwen3-VL-8B-Instruct** - the most powerful multimodal Large Language Model in the Qwen series for:
-1. **Clothing Image Analysis**: Extract category, color, season, and material from clothing images
-2. **Outfit Recommendations**: Generate personalized outfit suggestions based on wardrobe, weather, and preferences
+本模块使用 **Qwen3-VL-8B-Instruct** - Qwen 系列中最强大的多模态大语言模型，用于：
+1. **衣物图像分析**：从衣物图片中提取分类、颜色、季节和材质
+2. **穿搭推荐**：基于衣橱、天气和偏好生成个性化穿搭建议
 
-## Model Information
+## 模型信息
 
-- **Model**: [Qwen/Qwen3-VL-8B-Instruct](https://huggingface.co/Qwen/Qwen3-VL-8B-Instruct)
-- **Parameters**: 8 Billion
-- **Capabilities**: Enhanced vision + language understanding with improved spatial perception
-- **Hardware Requirements**:
-  - **GPU**: Recommended (16GB+ VRAM for optimal performance)
-  - **CPU**: Supported but slower (32GB+ RAM recommended)
+- **模型**: [Qwen/Qwen3-VL-8B-Instruct](https://huggingface.co/Qwen/Qwen3-VL-8B-Instruct)
+- **参数量**: 80 亿
+- **能力**: 增强的视觉 + 语言理解，改进的空间感知
+- **硬件要求**：
+  - **GPU**: 推荐（16GB+ 显存以获得最佳性能）
+  - **CPU**: 支持但较慢（推荐 32GB+ 内存）
 
-## Installation
+## 安装
 
-### 1. Install Dependencies
+### 1. 安装依赖
 
 ```bash
 cd ml
 pip install -r requirements.txt
 ```
 
-### 2. Download Model (Automatic)
+### 2. 下载模型（自动）
 
-The model will be automatically downloaded from HuggingFace on first use. This may take some time depending on your internet connection (~15GB download).
+模型将在首次使用时从 HuggingFace 自动下载。根据你的网络速度，这可能需要一些时间（约 15GB 下载）。
 
-### 3. Manual Model Download (Optional)
+### 3. 手动下载模型（可选）
 
-If you prefer to download manually:
+如果你偏好手动下载：
 
 ```bash
-# Using huggingface-cli
+# 使用 huggingface-cli
 huggingface-cli download Qwen/Qwen3-VL-8B-Instruct
 ```
 
-## Usage
+## 使用方法
 
-### Clothing Image Analysis
+### 衣物图像分析
 
 ```python
 from ml.inference import predict
 
-# Analyze a clothing image
-result = predict("path/to/clothing/image.jpg")
+# 分析衣物图片
+result = predict("路径/到/衣物/图片.jpg")
 
-# Result format:
+# 结果格式:
 # {
 #     "category": "top",
 #     "color": "blue",
@@ -54,20 +54,20 @@ result = predict("path/to/clothing/image.jpg")
 # }
 ```
 
-### Outfit Recommendations
+### 穿搭推荐
 
 ```python
 from ml.inference import get_recommendations
 
-# Generate recommendations
+# 生成推荐
 result = get_recommendations(
     user={
         "body_type": "athletic",
         "city": "New York"
     },
     wardrobe=[
-        {"id": 1, "name": "Blue T-shirt", "category": "top", "color": "blue", "season": "spring,summer", "material": "cotton"},
-        {"id": 2, "name": "Jeans", "category": "bottom", "color": "blue", "season": "all", "material": "denim"}
+        {"id": 1, "name": "蓝色T恤", "category": "top", "color": "blue", "season": "spring,summer", "material": "cotton"},
+        {"id": 2, "name": "牛仔裤", "category": "bottom", "color": "blue", "season": "all", "material": "denim"}
     ],
     weather={
         "temperature": 22,
@@ -80,121 +80,121 @@ result = get_recommendations(
     }
 )
 
-# Result format:
+# 结果格式:
 # {
 #     "outfits": [
 #         {
 #             "items": [wardrobe_item1, wardrobe_item2],
-#             "description": "Perfect casual look for sunny weather..."
+#             "description": "适合晋天的完美休闲穿搭..."
 #         }
 #     ],
 #     "missing_items": [
 #         {
 #             "category": "shoes",
-#             "reason": "Would complete the casual outfit"
+#             "reason": "可以完善休闲穿搭"
 #         }
 #     ]
 # }
 ```
 
-## Model Performance
+## 模型性能
 
-### GPU Performance
-- **First Load**: ~30 seconds (model loading)
-- **Image Analysis**: ~2-5 seconds per image
-- **Recommendation Generation**: ~5-10 seconds
+### GPU 性能
+- **首次加载**: 约30秒（模型加载）
+- **图像分析**: 每张图片约 2-5 秒
+- **推荐生成**: 约 5-10 秒
 
-### CPU Performance
-- **First Load**: ~60 seconds (model loading)
-- **Image Analysis**: ~15-30 seconds per image
-- **Recommendation Generation**: ~30-60 seconds
+### CPU 性能
+- **首次加载**: 约60秒（模型加载）
+- **图像分析**: 每张图片约 15-30 秒
+- **推荐生成**: 约 30-60 秒
 
-## Integration with Backend
+## 与后端集成
 
-The ML module is automatically integrated with the backend services:
+ML 模块自动与后端服务集成：
 
-1. **Image Service** (`app/services/image_service.py`):
-   - Calls `ml.inference.predict()` for clothing analysis
-   - Automatically used when uploading clothing items
+1. **图像服务** (`app/services/image_service.py`)：
+   - 调用 `ml.inference.predict()` 进行衣物分析
+   - 上传衣物时自动使用
 
-2. **Recommendation Service** (`app/services/recommendation_service.py`):
-   - Calls `recommendation.logic.get_recommendations()`
-   - Which internally uses `ml.inference.get_recommendations()`
+2. **推荐服务** (`app/services/recommendation_service.py`)：
+   - 调用 `recommendation.logic.get_recommendations()`
+   - 内部使用 `ml.inference.get_recommendations()`
 
-## Model Behavior
+## 模型行为
 
-### Image Analysis
-The model is prompted to identify:
-- **Category**: top, bottom, dress, outerwear, shoes, accessories
-- **Color**: Primary color name
-- **Season**: Suitable seasons (spring, summer, fall, winter)
-- **Material**: Fabric type (cotton, denim, wool, etc.)
+### 图像分析
+模型会识别：
+- **分类**: 上装、下装、连衣裙、外套、鞋子、配饰
+- **颜色**: 主要颜色名称
+- **季节**: 适用季节（春、夏、秋、冬）
+- **材质**: 面料类型（棉、牛仔布、羊毛等）
 
-### Recommendations
-The model considers:
-- Available wardrobe items
-- Current weather conditions
-- User's body type and location
-- User preferences (occasion, style, color)
-- Fashion compatibility and styling rules
+### 推荐生成
+模型会考虑：
+- 可用的衣橱物品
+- 当前天气条件
+- 用户的体型和地理位置
+- 用户偏好（场合、风格、颜色）
+- 时尚配搭和造型规则
 
-## Troubleshooting
+## 问题排查
 
-### Out of Memory (OOM) Error
+### 内存不足 (OOM) 错误
 
-If you get CUDA OOM errors:
+如果遇到 CUDA OOM 错误：
 
 ```python
-# Option 1: Use CPU instead
+# 方案 1: 使用 CPU
 export CUDA_VISIBLE_DEVICES=""
 
-# Option 2: Reduce batch size / Use model offloading
-# The model is already configured for auto device mapping
+# 方案 2: 减少 batch size / 使用模型卸载
+# 模型已配置为自动设备映射
 ```
 
-### Slow Performance
+### 性能较慢
 
-- Ensure you're using GPU if available
-- First inference is always slow due to model loading
-- Subsequent inferences use the cached model instance
+- 确保使用 GPU（如果可用）
+- 首次推理总是较慢，因为需要加载模型
+- 后续推理使用缓存的模型实例
 
-### Model Not Found
+### 未找到模型
 
-If download fails:
+如果下载失败：
 ```bash
-# Check HuggingFace connection
+# 检查 HuggingFace 连接
 huggingface-cli whoami
 
-# Manually download
+# 手动下载
 huggingface-cli download Qwen/Qwen3-VL-8B-Instruct
 ```
 
-## Alternative Models
+## 替代模型
 
-If Qwen3-VL-8B is too large, you can modify `inference.py` to use:
-- **Qwen3-VL-2B-Instruct**: Smaller, faster, less accurate
-- **Qwen3-VL-4B-Instruct**: Balanced option
-- **Qwen2.5-VL-7B-Instruct**: Previous generation
+如果 Qwen3-VL-8B 太大，您可以修改 `inference.py` 使用：
+- **Qwen3-VL-2B-Instruct**: 更小、更快、准确度较低
+- **Qwen3-VL-4B-Instruct**: 平衡选项
+- **Qwen2.5-VL-7B-Instruct**: 上一代模型
 
-Change the model name in `FashionQwenModel.__init__()`:
+在 `FashionQwenModel.__init__()` 中修改模型名称：
 ```python
 def __init__(self, model_name: str = "Qwen/Qwen3-VL-4B-Instruct"):
 ```
 
-## API Access (Alternative to Local Model)
+## API 访问（替代本地模型）
 
-Instead of running the model locally, you can use Qwen API for faster inference:
+不运行本地模型，您可以使用 Qwen API 进行更快的推理：
 
-### Get API Key:
-1. **Alibaba Cloud DashScope** (Official): https://www.alibabacloud.com/help/en/model-studio/get-api-key
-2. **Qwen.ai Platform**: https://qwen.ai/apiplatform
-3. **OpenRouter** (Free Tier): https://openrouter.ai
+### 获取 API 密钥：
+1. **阿里云百炼大模型** (官方): https://www.alibabacloud.com/help/zh/model-studio/get-api-key
+2. **Qwen.ai 平台**: https://qwen.ai/apiplatform
+3. **OpenRouter** (免费套餐): https://openrouter.ai
 
-Set environment variable:
+设置环境变量：
 ```bash
 export QWEN_API_KEY="your-api-key-here"
 ```
 
-## License
+## 许可证
 
-This module uses the Qwen3-VL model which is licensed under Apache 2.0.
+本模块使用的 Qwen3-VL 模型采用 Apache 2.0 许可证。

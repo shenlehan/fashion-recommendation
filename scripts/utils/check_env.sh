@@ -198,9 +198,9 @@ if [ $check_fail -eq 0 ]; then
     echo -e "${GREEN}✓ 环境检查全部通过,可以运行 bash start.sh 启动服务${NC}"
     exit 0
 else
-    echo -e "${RED}✗ 存在 $check_fail 个问题,请先运行 bash autodl_install.sh 安装依赖${NC}"
+    echo -e "${RED}✗ 存在 $check_fail 个问题,请先运行 bash scripts/deployment/autodl_install.sh 安装依赖${NC}"
     echo ""
     echo "安装命令:"
-    echo "  bash autodl_install.sh"
+    echo "  cd scripts/deployment && bash autodl_install.sh"
     exit 1
 fi

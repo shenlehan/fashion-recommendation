@@ -14,6 +14,10 @@ def analyze_clothing_image(image_path: str) -> Dict[str, Any]:
     if isinstance(result.get("season"), list):
       result["season"] = ",".join(result["season"])
     
+    # 统一材质标注：棉 -> 棉质
+    if result.get("material") == "棉":
+      result["material"] = "棉质"
+    
     print(f"\n✅ 分析成功: {result}")
     print(f"{'='*60}\n")
     return result

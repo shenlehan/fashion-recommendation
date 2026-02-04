@@ -30,12 +30,13 @@ unzip fashion-recommendation.zip
 
 ### 2. 一键安装环境
 ```bash
-cd /root/autodl-tmp/fashion-recommendation
+cd /root/autodl-tmp/fashion-recommendation/scripts/deployment
 bash autodl_install.sh
 ```
 
 ### 3. 启动所有服务
 ```bash
+cd /root/autodl-tmp/fashion-recommendation
 bash start.sh
 ```
 

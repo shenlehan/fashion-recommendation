@@ -28,7 +28,7 @@ unzip fashion-recommendation.zip
 ### 2️⃣ 一键安装环境
 
 ```bash
-cd /root/autodl-tmp/fashion-recommendation
+cd /root/autodl-tmp/fashion-recommendation/scripts/deployment
 bash autodl_install.sh
 ```
 
@@ -45,6 +45,7 @@ bash autodl_install.sh
 ### 3️⃣ 启动服务
 
 ```bash
+cd /root/autodl-tmp/fashion-recommendation
 bash start.sh
 ```
 
@@ -79,7 +80,7 @@ http://你的AutoDL实例IP:8000/docs
 在安装前或出现问题时,运行环境检查:
 
 ```bash
-bash check_env.sh
+bash scripts/utils/check_env.sh
 ```
 
 ---
@@ -232,7 +233,7 @@ curl -X POST http://localhost:8001/process_tryon
 
 1. **运行环境检查**
    ```bash
-   bash check_env.sh
+   bash scripts/utils/check_env.sh
    ```
 
 2. **查看日志文件**
@@ -269,7 +270,7 @@ curl -X POST http://localhost:8001/process_tryon
 
 - [ ] AutoDL 实例已启动 (GPU: 24GB+, 内存: 30GB+)
 - [ ] 代码已上传到 `/root/autodl-tmp/fashion-recommendation`
-- [ ] 已执行 `bash autodl_install.sh`
+- [ ] 已执行 `bash scripts/deployment/autodl_install.sh`
 - [ ] 已执行 `bash start.sh`
 - [ ] 能访问 `http://<IP>:3000`
 - [ ] 后端健康检查通过 `curl http://localhost:8000/health`
