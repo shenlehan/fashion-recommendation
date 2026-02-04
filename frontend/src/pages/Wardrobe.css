@@ -21,6 +21,59 @@
   color: var(--text-primary);
 }
 
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.selection-count {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary-color);
+  padding: 8px 16px;
+  background: #f0f7ff;
+  border-radius: 8px;
+}
+
+.btn-secondary {
+  padding: 12px 24px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-secondary:hover {
+  background: #5a6268;
+  transform: translateY(-2px);
+}
+
+.btn-danger {
+  padding: 12px 24px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #c82333;
+  transform: translateY(-2px);
+}
+
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .upload-form {
   background: var(--surface);
   padding: 32px;
@@ -168,8 +221,8 @@
 .progress-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--primary-color), #667eea);
-  transition: width 0.3s ease;
   border-radius: 4px;
+  /* 移除transition，确保进度条立即更新 */
 }
 
 .progress-text {
@@ -178,6 +231,129 @@
   text-align: center;
   margin: 0;
   font-weight: 600;
+}
+
+/* 模态弹窗样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-icon {
+  font-size: 48px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.modal-content h3 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.modal-content p {
+  font-size: 16px;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.modal-content p strong {
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+.modal-warning {
+  font-size: 14px;
+  color: #dc3545;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btn-cancel {
+  flex: 1;
+  padding: 12px 24px;
+  background: #e9ecef;
+  color: #495057;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+  background: #dee2e6;
+  transform: translateY(-1px);
+}
+
+.btn-confirm-delete {
+  flex: 1;
+  padding: 12px 24px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-confirm-delete:hover {
+  background: #c82333;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
 }
 
 .wardrobe-grid {
@@ -200,6 +376,36 @@
   }
 }
 
+.wardrobe-item.selectable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.wardrobe-item.selectable:hover {
+  border-color: var(--primary-color);
+}
+
+.wardrobe-item.selected {
+  border: 2px solid var(--primary-color);
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+}
+
+.selection-checkbox {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  width: 24px;
+  height: 24px;
+}
+
+.selection-checkbox input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+}
+
 .wardrobe-item {
   background: var(--surface);
   border-radius: 16px;
@@ -210,6 +416,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  position: relative;
 }
 
 .wardrobe-item:hover {

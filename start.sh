@@ -56,7 +56,7 @@ echo "-----------------------------------------------"
 cd "$PROJECT_DIR/backend"
 
 conda activate pytorch
-nohup uvicorn app.main:app --host 0.0.0.0 --port 6008 > "$BACKEND_LOG" 2>&1 &
+nohup uvicorn app.main:app --host 0.0.0.0 --port 6008 --timeout-graceful-shutdown 0 --log-level info > "$BACKEND_LOG" 2>&1 &
 BACKEND_PID=$!
 
 echo "✓ 后端已启动 (PID: $BACKEND_PID)"

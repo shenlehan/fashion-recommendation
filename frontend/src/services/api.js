@@ -72,6 +72,11 @@ export const deleteClothingItem = async (itemId) => {
   return response.data;
 };
 
+export const deleteClothingBatch = async (itemIds) => {
+  const response = await api.post('/clothes/delete-batch', itemIds);
+  return response.data;
+};
+
 // --- 推荐功能 ---
 export const getOutfitRecommendations = async (userId, preferences = {}) => {
   const params = new URLSearchParams({ user_id: userId, ...preferences });

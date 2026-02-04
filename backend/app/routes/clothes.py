@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Body
 from fastapi.responses import StreamingResponse
 from typing import List
 from sqlalchemy.orm import Session
@@ -68,11 +68,16 @@ async def upload_clothing_batch_stream(
 ):
   async def generate_progress():
     import os
+    import asyncio
+    import sys
     upload_dir = "uploads"
     os.makedirs(upload_dir, exist_ok=True)
     
     total = len(files)
-    yield f"data: {json.dumps({'type': 'start', 'total': total})}\n\n"
+    message = json.dumps({'type': 'start', 'total': total})
+    print(f"[SSE] 发送start消息: {message}", flush=True)
+    yield f"data: {message}\n\n"
+    await asyncio.sleep(0)
     
     success_count = 0
     failed_count = 0
@@ -88,9 +93,7 @@ async def upload_clothing_batch_stream(
         with open(file_path, "wb") as f:
           f.write(content)
         
-        # AI分析
-        yield f"data: {json.dumps({'type': 'progress', 'current': idx, 'total': total, 'status': 'analyzing', 'filename': file.filename})}\n\n"
-        
+        # AI分析 - 使用小数来区分analyzing和success状态
         attributes = analyze_clothing_image(file_path)
         
         season = attributes["season"]
@@ -120,7 +123,10 @@ async def upload_clothing_batch_stream(
           "item_id": db_item.id
         })
         
-        yield f"data: {json.dumps({'type': 'progress', 'current': idx, 'total': total, 'status': 'success', 'filename': file.filename, 'name': item_name})}\n\n"
+        message = json.dumps({'type': 'progress', 'current': idx, 'total': total, 'status': 'success', 'filename': file.filename, 'name': item_name})
+        print(f"[SSE] 发送progress消息 [{idx}/{total}]: {file.filename}", flush=True)
+        yield f"data: {message}\n\n"
+        await asyncio.sleep(0)
         
       except Exception as e:
         failed_count += 1
@@ -136,12 +142,26 @@ async def upload_clothing_batch_stream(
           except:
             pass
         
-        yield f"data: {json.dumps({'type': 'progress', 'current': idx, 'total': total, 'status': 'failed', 'filename': file.filename, 'error': str(e)})}\n\n"
+        message = json.dumps({'type': 'progress', 'current': idx, 'total': total, 'status': 'failed', 'filename': file.filename, 'error': str(e)})
+        print(f"[SSE] 发送failed消息 [{idx}/{total}]: {file.filename}", flush=True)
+        yield f"data: {message}\n\n"
+        await asyncio.sleep(0)
     
     # 发送完成消息
-    yield f"data: {json.dumps({'type': 'complete', 'success': success_items, 'failed': failed_items, 'total': total})}\n\n"
+    message = json.dumps({'type': 'complete', 'success': success_items, 'failed': failed_items, 'total': total})
+    print(f"[SSE] 发送complete消息: 成功{len(success_items)}/失败{len(failed_items)}", flush=True)
+    yield f"data: {message}\n\n"
+    await asyncio.sleep(0)
   
-  return StreamingResponse(generate_progress(), media_type="text/event-stream")
+  return StreamingResponse(
+    generate_progress(), 
+    media_type="text/event-stream",
+    headers={
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
+      "X-Accel-Buffering": "no"
+    }
+  )
 
 
 @router.post("/upload-batch")
@@ -268,3 +288,62 @@ def delete_clothing_item(item_id: int, db: Session = Depends(get_db)):
   print(f"✅ 数据库记录删除成功")
   print(f"{'='*60}\n")
   return {"message": "删除成功"}
+
+
+@router.post("/delete-batch")
+def delete_clothing_batch(item_ids: List[int] = Body(...), db: Session = Depends(get_db)):
+  print(f"\n{'='*60}")
+  print(f"收到批量删除请求")
+  print(f"item_ids: {item_ids}")
+  print(f"数量: {len(item_ids)}")
+  print(f"{'='*60}\n")
+  
+  import os
+  results = {
+    "success": [],
+    "failed": [],
+    "total": len(item_ids)
+  }
+  
+  for idx, item_id in enumerate(item_ids, 1):
+    try:
+      print(f"[{idx}/{len(item_ids)}] 删除 item_id: {item_id}")
+      
+      item = db.query(WardrobeItem).filter(WardrobeItem.id == item_id).first()
+      if not item:
+        raise Exception(f"未找到 item_id={item_id} 的衣物")
+      
+      # 删除图片文件
+      if item.image_path and os.path.exists(item.image_path):
+        try:
+          os.remove(item.image_path)
+          print(f"✅ 已删除图片: {item.image_path}")
+        except Exception as e:
+          print(f"⚠️  删除图片失败: {e}")
+      
+      # 删除数据库记录
+      db.delete(item)
+      db.commit()
+      
+      print(f"✅ [{idx}/{len(item_ids)}] 成功: {item.name} (ID: {item_id})")
+      results["success"].append({
+        "item_id": item_id,
+        "name": item.name
+      })
+      
+    except Exception as e:
+      print(f"❌ [{idx}/{len(item_ids)}] 失败: item_id={item_id}")
+      print(f"错误详情: {str(e)}")
+      
+      results["failed"].append({
+        "item_id": item_id,
+        "error": str(e)
+      })
+  
+  print(f"\n{'='*60}")
+  print(f"批量删除完成")
+  print(f"成功: {len(results['success'])}/{results['total']}")
+  print(f"失败: {len(results['failed'])}/{results['total']}")
+  print(f"{'='*60}\n")
+  
+  return results

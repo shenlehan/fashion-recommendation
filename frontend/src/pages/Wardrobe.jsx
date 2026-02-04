@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { getUserWardrobe, uploadClothingItem, uploadClothingBatch, deleteClothingItem, API_ORIGIN } from "../services/api";
+import { useState, useEffect, useRef } from "react";
+import { flushSync } from "react-dom";
+import { getUserWardrobe, uploadClothingItem, uploadClothingBatch, deleteClothingItem, deleteClothingBatch, API_ORIGIN } from "../services/api";
 import "./Wardrobe.css";
 
 // ===== 中英文映射字典 =====
@@ -40,7 +41,22 @@ function Wardrobe({ user }) {
   const [uploadForm, setUploadForm] = useState({
     files: []
   });
-  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0, tick: 0 });
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const progressBarRef = useRef(null);
+
+  // 监听进度更新，直接操作DOM确保实时显示
+  useEffect(() => {
+    if (progressBarRef.current) {
+      const percentage = uploadProgress.total > 0 
+        ? (uploadProgress.current / uploadProgress.total) * 100 
+        : 0;
+      progressBarRef.current.style.width = `${percentage}%`;
+      console.log('直接更新DOM进度条:', percentage + '%', uploadProgress);
+    }
+  }, [uploadProgress.tick]);
 
   useEffect(() => {
     fetchWardrobe();
@@ -76,7 +92,7 @@ function Wardrobe({ user }) {
 
     setUploading(true);
     setError("");
-    setUploadProgress({ current: 0, total: uploadForm.files.length });
+    setUploadProgress({ current: 0, total: uploadForm.files.length }); // 立即设置total，保证进度条显示
 
     try {
       const formData = new FormData();
@@ -92,10 +108,14 @@ function Wardrobe({ user }) {
         const url = `${API_BASE_URL}/clothes/upload-batch-stream?user_id=${user.id}`;
         
         // 使用fetch手动处理SSE
+        console.log('开始批量上传, URL:', url);
         const response = await fetch(url, {
           method: 'POST',
           body: formData,
         });
+        
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -109,7 +129,10 @@ function Wardrobe({ user }) {
         
         while (true) {
           const { value, done } = await reader.read();
-          if (done) break;
+          if (done) {
+            console.log('Stream 结束');
+            break;
+          }
           
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
@@ -117,15 +140,26 @@ function Wardrobe({ user }) {
           
           for (const line of lines) {
             if (line.startsWith('data: ')) {
-              const data = JSON.parse(line.substring(6));
+              const jsonStr = line.substring(6);
+              console.log('收到SSE消息:', jsonStr);
+              const data = JSON.parse(jsonStr);
               
               if (data.type === 'start') {
-                setUploadProgress({ current: 0, total: data.total });
+                console.log('开始上传, total:', data.total);
+                flushSync(() => {
+                  setUploadProgress({ current: 0, total: data.total, tick: Date.now() });
+                });
               } else if (data.type === 'progress') {
-                setUploadProgress({ current: data.current, total: data.total });
+                console.log(`进度更新: ${data.current}/${data.total}, status: ${data.status}`);
+                flushSync(() => {
+                  setUploadProgress({ current: data.current, total: data.total, tick: Date.now() });
+                });
               } else if (data.type === 'complete') {
+                console.log('上传完成:', data);
                 finalResult = data;
-                setUploadProgress({ current: data.total, total: data.total });
+                flushSync(() => {
+                  setUploadProgress({ current: data.total, total: data.total, tick: Date.now() });
+                });
               }
             }
           }
@@ -144,10 +178,10 @@ function Wardrobe({ user }) {
         }
       } else {
         // 单个上传
-        setUploadProgress({ current: 0, total: 1 });
+        setUploadProgress({ current: 0, total: 1, tick: Date.now() });
         formData.append("file", uploadForm.files[0]);
         await uploadClothingItem(user.id, formData);
-        setUploadProgress({ current: 1, total: 1 });
+        setUploadProgress({ current: 1, total: 1, tick: Date.now() });
         setUploadForm({ files: [] });
         setShowUploadForm(false);
         fetchWardrobe();
@@ -157,7 +191,7 @@ function Wardrobe({ user }) {
       setError(err.message || "上传失败");
     } finally {
       setUploading(false);
-      setTimeout(() => setUploadProgress({ current: 0, total: 0 }), 1000);
+      setTimeout(() => setUploadProgress({ current: 0, total: 0, tick: 0 }), 1000);
     }
   };
 
@@ -180,6 +214,50 @@ function Wardrobe({ user }) {
     }
   };
 
+  const toggleSelectionMode = () => {
+    setIsSelectionMode(!isSelectionMode);
+    setSelectedItems([]);
+  };
+
+  const toggleItemSelection = (itemId) => {
+    setSelectedItems(prev => 
+      prev.includes(itemId) 
+        ? prev.filter(id => id !== itemId)
+        : [...prev, itemId]
+    );
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedItems.length === 0) {
+      setError("请选择要删除的衣物");
+      return;
+    }
+
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmBatchDelete = async () => {
+    setShowDeleteConfirm(false);
+
+    try {
+      const result = await deleteClothingBatch(selectedItems);
+      
+      if (result.failed.length > 0) {
+        const failedIds = result.failed.map(f => f.item_id).join(", ");
+        setError(`部分删除失败：ID ${failedIds}`);
+      }
+      
+      if (result.success.length > 0) {
+        setSelectedItems([]);
+        setIsSelectionMode(false);
+        fetchWardrobe();
+      }
+    } catch (err) {
+      console.error('批量删除错误:', err);
+      setError(err.message || "批量删除失败");
+    }
+  };
+
   const getImageUrl = (path) => {
     if (!path) return "";
     if (path.startsWith("http")) return path;
@@ -190,15 +268,54 @@ function Wardrobe({ user }) {
     <div className="wardrobe-container">
       <div className="wardrobe-header">
         <h1>我的衣橱</h1>
-        <button
-          className="btn-primary"
-          onClick={() => setShowUploadForm(!showUploadForm)}
-        >
-          {showUploadForm ? "取消" : "+ 添加衣物"}
-        </button>
+        <div className="header-actions">
+          {isSelectionMode && (
+            <>
+              <span className="selection-count">已选 {selectedItems.length} 件</span>
+              <button 
+                className="btn-danger" 
+                onClick={handleBatchDelete}
+                disabled={selectedItems.length === 0}
+              >
+                删除所选
+              </button>
+            </>
+          )}
+          <button
+            className={isSelectionMode ? "btn-secondary" : "btn-primary"}
+            onClick={toggleSelectionMode}
+          >
+            {isSelectionMode ? "取消选择" : "批量管理"}
+          </button>
+          <button
+            className="btn-primary"
+            onClick={() => setShowUploadForm(!showUploadForm)}
+          >
+            {showUploadForm ? "取消" : "+ 添加衣物"}
+          </button>
+        </div>
       </div>
 
       {error && <div className="error-message">{error}</div>}
+
+      {showDeleteConfirm && (
+        <div className="modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-icon">⚠️</div>
+            <h3>确认删除</h3>
+            <p>确定要删除 <strong>{selectedItems.length}</strong> 件衣物吗？</p>
+            <p className="modal-warning">此操作不可恢复</p>
+            <div className="modal-actions">
+              <button className="btn-cancel" onClick={() => setShowDeleteConfirm(false)}>
+                取消
+              </button>
+              <button className="btn-confirm-delete" onClick={confirmBatchDelete}>
+                确认删除
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showUploadForm && (
         <div className="upload-form">
@@ -239,12 +356,16 @@ function Wardrobe({ user }) {
               <div className="upload-progress">
                 <div className="progress-bar">
                   <div 
+                    ref={progressBarRef}
                     className="progress-fill" 
-                    style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                    style={{ 
+                      width: '0%',
+                      willChange: 'width'
+                    }}
                   ></div>
                 </div>
                 <p className="progress-text">
-                  {uploadProgress.current}/{uploadProgress.total} 完成
+                  {uploadProgress.current}/{uploadProgress.total} 完成 ({Math.round((uploadProgress.current / uploadProgress.total) * 100)}%)
                 </p>
               </div>
             )}
@@ -261,7 +382,21 @@ function Wardrobe({ user }) {
       ) : (
         <div className="wardrobe-grid">
           {wardrobe.map((item) => (
-            <div key={item.id} className="wardrobe-item">
+            <div 
+              key={item.id} 
+              className={`wardrobe-item ${isSelectionMode ? 'selectable' : ''} ${selectedItems.includes(item.id) ? 'selected' : ''}`}
+              onClick={() => isSelectionMode && toggleItemSelection(item.id)}
+            >
+              {isSelectionMode && (
+                <div className="selection-checkbox">
+                  <input 
+                    type="checkbox" 
+                    checked={selectedItems.includes(item.id)}
+                    onChange={() => toggleItemSelection(item.id)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              )}
               <div className="item-image">
                 {item.image_path ? (
                   <img
@@ -280,12 +415,14 @@ function Wardrobe({ user }) {
                 </div>
                 {item.season && <p className="season">季节：{translateSeasons(item.season)}</p>}
                 {item.material && <p className="material">材质：{item.material}</p>}
-                <button
-                  className="btn-delete"
-                  onClick={() => handleDelete(item.id)}
-                >
-                  删除
-                </button>
+                {!isSelectionMode && (
+                  <button
+                    className="btn-delete"
+                    onClick={() => handleDelete(item.id)}
+                  >
+                    删除
+                  </button>
+                )}
               </div>
             </div>
           ))}
