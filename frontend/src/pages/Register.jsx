@@ -35,13 +35,11 @@ function Register({ onLogin }) {
     setLoading(true);
 
     try {
-      console.log('Attempting registration...');
       const result = await registerUser({
         username: formData.username,
         email: formData.email,
         password: formData.password
       });
-      console.log('Registration successful:', result);
 
       // Registration successful
       setSuccess(true);
@@ -49,7 +47,6 @@ function Register({ onLogin }) {
 
       // Redirect to login page after 1.5 seconds
       setTimeout(() => {
-        console.log('Navigating to login...');
         navigate('/login', { state: { message: '注册成功！请登录' } });
       }, 1500);
     } catch (err) {

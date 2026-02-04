@@ -22,15 +22,26 @@ def get_outfit_recommendations(
   if not user:
     raise HTTPException(status_code=404, detail="用户不存在")
 
+  # 检查必填字段
+  if not user.gender or not user.age:
+    raise HTTPException(status_code=400, detail="请先完善个人资料")
+  
+  # 检查身高体重必填项
+  if not user.height or not user.weight:
+    raise HTTPException(status_code=400, detail="请先完善个人资料")
+
   wardrobe = db.query(WardrobeItem).filter(WardrobeItem.user_id == user_id).all()
   wardrobe_list = [
     {
       "id": item.id,
       "name": item.name,
+      "name_en": item.name_en,
       "category": item.category,
       "color": item.color,
+      "color_en": item.color_en,
       "season": item.season,
       "material": item.material,
+      "material_en": item.material_en,
       "image_path": item.image_path
     }
     for item in wardrobe
@@ -49,7 +60,10 @@ def get_outfit_recommendations(
   result = generate_outfit_recommendations(
     user_profile={
       "id": user.id,
-      "body_type": user.body_type,
+      "gender": user.gender,
+      "age": user.age,
+      "height": user.height,
+      "weight": user.weight,
       "city": user.city
     },
     wardrobe_items=wardrobe_list,

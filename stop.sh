@@ -8,6 +8,13 @@ echo ""
 echo "正在停止服务..."
 echo ""
 
+# Stop VTON server
+if pkill -f "vton_server.py" 2>/dev/null; then
+  echo "✓ VTON服务器已停止"
+else
+  echo "⚠ 未找到VTON服务器进程"
+fi
+
 # Stop backend
 if pkill -f "uvicorn app.main:app" 2>/dev/null; then
   echo "✓ 后端已停止"
@@ -27,6 +34,12 @@ sleep 2
 # Verify
 echo ""
 echo "验证中:"
+
+if pgrep -f "vton_server.py" > /dev/null; then
+  echo "✗ VTON服务器仍在运行"
+else
+  echo "✓ VTON服务器已停止"
+fi
 
 if pgrep -f "uvicorn app.main:app" > /dev/null; then
   echo "✗ 后端仍在运行"

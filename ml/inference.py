@@ -71,25 +71,28 @@ class FashionQwenModel:
           },
           {
             "type": "text",
-            "text": """Analyze this clothing item and return JSON.
+            "text": """Analyze this clothing item and return JSON with both Chinese and English descriptions.
 
 RULES:
-1. name, color, material: Output in CHINESE (中文)
-2. category: Choose ONE from [top, bottom, dress, outerwear, shoes, accessories]
-3. season: Select ALL applicable from [spring, summer, fall, winter]
-
-FORMAT:
-- name: 颜色+材质+类型 (例: "藏青色牛仔夹克")
-- color: 主色调中文名 (例: "藏青色", "米白色", "草编色")
-- material: 面料中文名 (例: "牛仔布", "羊羔毛绒", "人造绒面革")
+1. name: Output in CHINESE (中文) - 颜色+材质+类型 (e.g., "藏青色牛仔夹克")
+2. name_en: Output in ENGLISH - color+material+type (e.g., "Navy Blue Denim Jacket")
+3. color: Output in CHINESE (中文) - 主色调中文名 (e.g., "藏青色", "米白色")
+4. color_en: Output in ENGLISH - main color (e.g., "navy blue", "beige")
+5. material: Output in CHINESE (中文) - 面料中文名 (e.g., "牛仔布", "羊羔毛绒")
+6. material_en: Output in ENGLISH - fabric type (e.g., "denim", "fleece")
+7. category: Choose ONE from [top, bottom, dress, outerwear, shoes, accessories]
+8. season: Select ALL applicable from [spring, summer, fall, winter]
 
 JSON:
 {
   "name": "藏青色牛仔夹克",
+  "name_en": "Navy Blue Denim Jacket",
   "category": "outerwear",
   "color": "藏青色",
+  "color_en": "navy blue",
   "season": ["spring", "fall"],
-  "material": "牛仔布"
+  "material": "牛仔布",
+  "material_en": "denim"
 }"""
           }
         ],
@@ -137,18 +140,22 @@ JSON:
 
       result = json.loads(output_text.strip())
 
+      # 将季节列表转换为斜杠分隔的字符串
       if isinstance(result.get("season"), list):
-        result["season"] = ",".join(result["season"])
+        result["season"] = "/".join(result["season"])
 
       return result
     except json.JSONDecodeError:
       print(f"Failed to parse JSON: {output_text}")
       return {
         "name": "未知衣物",
+        "name_en": "Unknown Item",
         "category": "unknown",
         "color": "未知颜色",
-        "season": "spring,summer,fall,winter",
-        "material": "未知材质"
+        "color_en": "unknown",
+        "season": "spring/summer/fall/winter",
+        "material": "未知材质",
+        "material_en": "unknown"
       }
 
   def generate_outfit_recommendation(
@@ -158,18 +165,42 @@ JSON:
       user_profile: Dict[str, Any],
       preferences: Optional[Dict[str, Any]] = None
   ) -> Dict[str, Any]:
+    # 使用英文字段构建纯英文Prompt
     wardrobe_text = "\n".join([
-      f"- Item {i + 1}: {item.get('name', 'Unknown')} "
-      f"({item.get('category', 'unknown')}, {item.get('color', 'unknown')}, "
-      f"seasons: {item.get('season', 'all')}, material: {item.get('material', 'unknown')})"
+      f"- Item {i + 1}: {item.get('name_en', item.get('name', 'Unknown'))} "
+      f"(category: {item.get('category', 'unknown')}, "
+      f"color: {item.get('color_en', item.get('color', 'unknown'))}, "
+      f"seasons: {item.get('season', 'all')}, "
+      f"material: {item.get('material_en', item.get('material', 'unknown'))})"
       for i, item in enumerate(wardrobe_items)
     ])
 
     weather_text = f"Temperature: {weather.get('temperature', 'N/A')}°C, " \
                    f"Condition: {weather.get('condition', 'N/A')}"
 
-    user_text = f"Body type: {user_profile.get('body_type', 'average')}, " \
-                f"City: {user_profile.get('city', 'Unknown')}"
+    # 生成用户信息文本
+    user_parts = []
+    
+    # 性别和年龄
+    if user_profile.get('gender'):
+      gender_map = {'male': 'Male', 'female': 'Female', 'other': 'Other'}
+      user_parts.append(f"Gender: {gender_map.get(user_profile['gender'], user_profile['gender'])}")
+    if user_profile.get('age'):
+      user_parts.append(f"Age: {user_profile['age']}")
+    
+    # 身高体重和BMI
+    if user_profile.get('height') and user_profile.get('weight'):
+      height = user_profile['height']
+      weight = user_profile['weight']
+      # 计算BMI
+      bmi = weight / ((height / 100) ** 2)
+      user_parts.append(f"Height: {height}cm, Weight: {weight}kg, BMI: {bmi:.1f}")
+    
+    # 城市
+    if user_profile.get('city'):
+      user_parts.append(f"Location: {user_profile['city']}")
+    
+    user_text = ", ".join(user_parts) if user_parts else "No user profile available"
 
     pref_text = ""
     if preferences:
@@ -179,7 +210,7 @@ JSON:
       if preferences.get('style'):
         pref_parts.append(f"Style: {preferences['style']}")
       if preferences.get('color_preference'):
-        pref_parts.append(f"Preferred colors: {preferences['color_preference']}")
+        pref_parts.append(f"Color tone: {preferences['color_preference']}")
       if pref_parts:
         pref_text = f"\n\nUser Preferences:\n" + "\n".join(pref_parts)
 
@@ -195,19 +226,20 @@ RULES:
 2. Use item numbers from wardrobe list
 3. Match weather and style preferences
 4. Provide styling tips in description
+5. IMPORTANT: Output ALL descriptions in CHINESE (中文), including outfit description and missing item reasons
 
 JSON:
 {{
   "outfits": [
     {{
       "items": [1, 3, 5],
-      "description": "Complete outfit description with styling tips"
+      "description": "用中文描述完整搭配和穿搭建议"
     }}
   ],
   "missing_items": [
     {{
-      "category": "Specific item (e.g., black boots)",
-      "reason": "Why needed"
+      "category": "具体单品名称（中文）",
+      "reason": "用中文说明为什么需要这个单品"
     }}
   ]
 }}"""

@@ -8,10 +8,19 @@ class WardrobeItem(Base):
 
   id = Column(Integer, primary_key=True, index=True)
   user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-  name = Column(String, nullable=False)  # e.g., "蓝色T恤"
+  
+  # 中文字段（前端显示）
+  name = Column(String, nullable=False)  # e.g., "黑色针织毛衣"
+  color = Column(String, nullable=False)  # e.g., "黑色"
+  material = Column(String, nullable=True)  # e.g., "针织"
+  
+  # 英文字段（Prompt使用）
+  name_en = Column(String, nullable=True)  # e.g., "Black Knit Sweater"
+  color_en = Column(String, nullable=True)  # e.g., "black"
+  material_en = Column(String, nullable=True)  # e.g., "knit"
+  
+  # 其他字段
   category = Column(String, nullable=False)  # e.g., "top", "bottom", "outerwear"
-  color = Column(String, nullable=False)  # e.g., "blue"
   season = Column(String, nullable=False)  # e.g., "spring,summer"
-  material = Column(String, nullable=True)  # e.g., "cotton"
   image_path = Column(String, nullable=False)  # 本地/云端图片路径
   created_at = Column(DateTime(timezone=True), server_default=func.now())

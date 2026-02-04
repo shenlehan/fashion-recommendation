@@ -7,8 +7,11 @@ class UserCreate(BaseModel):
   username: str
   email: str
   password: str
-  body_type: str = None
-  city: str = None
+  gender: Optional[str] = None
+  age: Optional[int] = None
+  height: Optional[int] = None
+  weight: Optional[int] = None
+  city: Optional[str] = None
 
 
 class UserLogin(BaseModel):
@@ -17,16 +20,25 @@ class UserLogin(BaseModel):
 
 
 class UserUpdate(BaseModel):
-  body_type: str = None
-  city: str = None
+  gender: Optional[str] = None
+  age: Optional[int] = None
+  height: Optional[int] = None
+  weight: Optional[int] = None
+  city: Optional[str] = None
+  profile_photo: Optional[str] = None
+  new_password: Optional[str] = None
 
 
 class UserResponse(BaseModel):
   id: int
   username: str
   email: str
-  body_type: Optional[str] = None
+  gender: Optional[str] = None
+  age: Optional[int] = None
+  height: int
+  weight: int
   city: Optional[str] = None
+  profile_photo: Optional[str] = None
   created_at: Optional[datetime] = None
 
   class Config:

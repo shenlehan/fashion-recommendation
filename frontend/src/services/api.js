@@ -47,7 +47,9 @@ export const getUserProfile = async (userId) => {
 };
 
 export const updateUserProfile = async (userId, updateData) => {
-  const response = await api.put(`/users/profile?user_id=${userId}`, updateData);
+  const response = await api.put(`/users/profile?user_id=${userId}`, updateData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return response.data;
 };
 
@@ -79,6 +81,12 @@ export const deleteClothingItem = async (itemId) => {
 
 export const deleteClothingBatch = async (itemIds) => {
   const response = await api.post('/clothes/delete-batch', itemIds);
+  return response.data;
+};
+
+// --- 上传状态管理 ---
+export const getUploadStatus = async (userId) => {
+  const response = await api.get(`/clothes/upload-status/${userId}`);
   return response.data;
 };
 

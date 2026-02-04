@@ -53,6 +53,22 @@
   transform: translateY(-2px);
 }
 
+.btn-select-all {
+  padding: 12px 24px;
+  background: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-select-all:hover {
+  background: #138496;
+  transform: translateY(-2px);
+}
+
 .btn-danger {
   padding: 12px 24px;
   background: #dc3545;
@@ -290,14 +306,14 @@
   font-weight: 700;
   color: var(--text-primary);
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .modal-content p {
   font-size: 16px;
   color: var(--text-secondary);
   text-align: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   line-height: 1.6;
 }
 
@@ -310,7 +326,8 @@
   font-size: 14px;
   color: #dc3545;
   font-weight: 600;
-  margin-bottom: 24px;
+  margin-top: 16px;
+  margin-bottom: 0;
 }
 
 .modal-actions {
