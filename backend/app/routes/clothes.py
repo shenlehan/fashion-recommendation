@@ -4,6 +4,7 @@ from typing import List
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.services.image_service import analyze_clothing_image
+from app.services.embedding_service import get_embedding_service
 from app.models.wardrobe import WardrobeItem
 import json
 
@@ -74,6 +75,23 @@ def upload_clothing(
   db.refresh(db_item)
   
   print(f"✅ 数据库保存成功, item_id: {db_item.id}")
+  
+  # 生成并存储向量到ChromaDB
+  try:
+    embedding_service = get_embedding_service()
+    embedding_service.add_item(db_item.id, {
+      "user_id": user_id,
+      "name": item_name,
+      "name_en": attributes.get("name_en", ""),
+      "color_en": attributes.get("color_en", ""),
+      "material_en": attributes.get("material_en", ""),
+      "season": season,
+      "category": attributes["category"]
+    })
+    print(f"✅ 向量生成成功")
+  except Exception as e:
+    print(f"⚠️  向量生成失败（不影响上传）: {e}")
+  
   return {"message": "上传成功！", "item_id": db_item.id}
 
 
@@ -170,6 +188,21 @@ async def upload_clothing_batch_stream(
           db.refresh(db_item)
           
           uploaded_ids.append(db_item.id)  # 记录已上传ID
+          
+          # 生成向量（异步，失败不影响上传）
+          try:
+            embedding_service = get_embedding_service()
+            embedding_service.add_item(db_item.id, {
+              "user_id": user_id,
+              "name": item_name,
+              "name_en": attributes.get("name_en", ""),
+              "color_en": attributes.get("color_en", ""),
+              "material_en": attributes.get("material_en", ""),
+              "season": season,
+              "category": attributes["category"]
+            })
+          except Exception as emb_err:
+            print(f"[SSE] 向量生成失败（不影响上传）: {emb_err}", flush=True)
           
           success_count += 1
           success_item = {
@@ -322,6 +355,21 @@ def upload_clothing_batch(
       db.commit()
       db.refresh(db_item)
       
+      # 生成向量
+      try:
+        embedding_service = get_embedding_service()
+        embedding_service.add_item(db_item.id, {
+          "user_id": user_id,
+          "name": item_name,
+          "name_en": attributes.get("name_en", ""),
+          "color_en": attributes.get("color_en", ""),
+          "material_en": attributes.get("material_en", ""),
+          "season": season,
+          "category": attributes["category"]
+        })
+      except Exception as emb_err:
+        print(f"⚠️  向量生成失败: {emb_err}")
+      
       print(f"✅ [{idx}/{len(files)}] 成功: {item_name} (ID: {db_item.id})")
       results["success"].append({
         "filename": file.filename,
@@ -417,6 +465,14 @@ def delete_clothing_item(item_id: int, db: Session = Depends(get_db)):
   db.delete(item)
   db.commit()
   print(f"✅ 数据库记录删除成功")
+  
+  # 删除ChromaDB中的向量
+  try:
+    embedding_service = get_embedding_service()
+    embedding_service.delete_item(item_id)
+  except Exception as e:
+    print(f"⚠️  向量删除失败（不影响主流程）: {e}")
+  
   print(f"{'='*60}\n")
   return {"message": "删除成功"}
 
@@ -463,6 +519,13 @@ def delete_clothing_batch(item_ids: List[int] = Body(...), db: Session = Depends
       # 删除数据库记录
       db.delete(item)
       db.commit()
+      
+      # 删除向量
+      try:
+        embedding_service = get_embedding_service()
+        embedding_service.delete_item(item_id)
+      except Exception as emb_err:
+        print(f"⚠️  向量删除失败: {emb_err}")
       
       print(f"✅ [{idx}/{len(item_ids)}] 成功: {item.name} (ID: {item_id})")
       results["success"].append({

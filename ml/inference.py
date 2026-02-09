@@ -15,50 +15,79 @@ from PIL import Image
 
 class FashionQwenModel:
   def __init__(self, model_name: str = None):
+    # AUTODL离线加载配置
+    os.environ['HF_DATASETS_OFFLINE'] = '1'
+    os.environ['TRANSFORMERS_OFFLINE'] = '1'
+    
+    # 支持环境变量指定模型路径
     if model_name is None:
-      project_root = Path(__file__).resolve().parent.parent
-      local_model_path = project_root / "models" / "Qwen" / "Qwen3-VL-8B-Instruct"
+      model_name = os.getenv('QWEN_MODEL_PATH', None)
+    
+    # 检查本地模型路径
+    local_model_path = "/root/.cache/huggingface/hub/models--Qwen--Qwen3-VL-8B-Instruct/snapshots"
+    fallback_path = "/root/qwen_model"
+    
+    if model_name is None:
+      # 优先级：/root/qwen_model > snapshot缓存 > 模型名
+      from pathlib import Path
       
-      # 检查本地模型是否存在
-      if local_model_path.exists():
-        model_name = str(local_model_path)
-        use_local_only = True
-        print(f"✅ 找到本地模型: {model_name}")
+      if Path(fallback_path).exists() and (Path(fallback_path) / "config.json").exists():
+        model_name = fallback_path
+        print(f"📂 使用本地完整模型: {model_name}")
+      elif Path(local_model_path).exists():
+        snapshot_dirs = [d for d in Path(local_model_path).iterdir() if d.is_dir()]
+        if snapshot_dirs:
+          latest_snapshot = max(snapshot_dirs, key=lambda p: p.stat().st_mtime)
+          model_name = str(latest_snapshot)
+          print(f"📂 使用缓存snapshot: {model_name}")
+        else:
+          model_name = "Qwen/Qwen3-VL-8B-Instruct"
+          print(f"⚠️  未找到本地模型，使用模型名: {model_name}")
       else:
-        # 本地不存在，从 HuggingFace 下载
         model_name = "Qwen/Qwen3-VL-8B-Instruct"
-        use_local_only = False
-        print(f"⚠️  本地模型不存在，将从 HuggingFace 下载: {model_name}")
-        print(f"📥 首次下载需要约 15GB 空间和 10-30 分钟，请耐心等待...")
-        print(f"💾 模型将缓存到: ~/.cache/huggingface/hub/")
-    else:
-      use_local_only = False
+        print(f"⚠️  本地缓存不存在，使用模型名: {model_name}")
     
     self.device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"🔧 初始化 Qwen3-VL，设备: {self.device}")
-    print(f"📂 加载模型: {model_name}")
 
-    # 如果 CUDA 可用但还是 Killed，可以尝试强制 device="cpu"
-    # self.device = "cpu" 
+    try:
+      self.model = AutoModelForImageTextToText.from_pretrained(
+        model_name,
+        torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
+        device_map={"":self.device},
+        trust_remote_code=True,
+        low_cpu_mem_usage=True,
+        local_files_only=True,
+        code_revision=None,  # 禁用代码版本检查
+      )
+      
+      self.processor = AutoProcessor.from_pretrained(
+        model_name,
+        trust_remote_code=True,
+        local_files_only=True,
+      )
+      
+      if self.device == "cpu":
+        self.model = self.model.to(self.device)
+      
+      print("✅ 模型加载成功！")
+      
+    except Exception as e:
+      print(f"\n❌ 模型加载失败: {e}")
+      print(f"\n💡 解决方案：")
+      print(f"   1. 下载完整模型:")
+      print(f"      cd /root/autodl-tmp/fashion-recommendation/ml")
+      print(f"      bash download_qwen_complete.sh")
+      print(f"")
+      print(f"   2. 或者手动下载:")
+      print(f"      export HF_ENDPOINT=https://hf-mirror.com")
+      print(f"      huggingface-cli download Qwen/Qwen3-VL-8B-Instruct --local-dir /root/qwen_model")
+      print(f"")
+      print(f"   3. 设置环境变量(可选):")
+      print(f"      export QWEN_MODEL_PATH=/root/qwen_model")
+      raise
 
-    self.model = AutoModelForImageTextToText.from_pretrained(
-      model_name,
-      torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
-      device_map={"": self.device}, # 显式映射
-      local_files_only=use_local_only,
-      trust_remote_code=True,
-      low_cpu_mem_usage=True
-    )
-    self.processor = AutoProcessor.from_pretrained(
-      model_name,
-      local_files_only=use_local_only,
-      trust_remote_code=True
-    )
 
-    if self.device == "cpu":
-      self.model = self.model.to(self.device)
-
-    print("✅ 模型加载成功！")
 
   def analyze_clothing_image(self, image_path: str) -> Dict[str, Any]:
     messages = [
@@ -74,25 +103,34 @@ class FashionQwenModel:
             "text": """Analyze this clothing item and return JSON with both Chinese and English descriptions.
 
 RULES:
-1. name: Output in CHINESE (中文) - 颜色+材质+类型 (e.g., "藏青色牛仔夹克")
-2. name_en: Output in ENGLISH - color+material+type (e.g., "Navy Blue Denim Jacket")
-3. color: Output in CHINESE (中文) - 主色调中文名 (e.g., "藏青色", "米白色")
-4. color_en: Output in ENGLISH - main color (e.g., "navy blue", "beige")
-5. material: Output in CHINESE (中文) - 面料中文名 (e.g., "牛仔布", "羊羔毛绒")
-6. material_en: Output in ENGLISH - fabric type (e.g., "denim", "fleece")
-7. category: Choose ONE from [top, bottom, dress, outerwear, shoes, accessories]
+1. name: Output in CHINESE (中文) - 颜色+材质+类型 (e.g., "黑色棉质T恤")
+2. name_en: Output in ENGLISH - color+material+type (e.g., "Black Cotton T-shirt")
+3. color: Output in CHINESE (中文) - 主色调中文名 (e.g., "黑色", "白色")
+4. color_en: Output in ENGLISH - main color (e.g., "black", "white")
+5. material: Output in CHINESE (中文) - 面料中文名 (e.g., "棉", "牛仔布")
+6. material_en: Output in ENGLISH - fabric type (e.g., "cotton", "denim")
+7. category: Choose ONE based on garment type and layering:
+   - underwear: bra, underwear, ...
+   - inner_top: T-shirt, tank top, undershirt, ... (thin, fitted, worn next to skin)
+   - mid_top: shirt, sweater, hoodie, cardigan, ... (structured tops, can be worn alone)
+   - outer_top: jacket, coat, down jacket, windbreaker, ... (outerwear, worn over other layers)
+   - bottom: pants, shorts, skirt, ...
+   - full_body: dress, jumpsuit, ...
+   - shoes: all footwear
+   - socks: all socks
+   - accessories: bag, hat, scarf, gloves, jewelry, ...
 8. season: Select ALL applicable from [spring, summer, fall, winter]
 
 JSON:
 {
-  "name": "藏青色牛仔夹克",
-  "name_en": "Navy Blue Denim Jacket",
-  "category": "outerwear",
-  "color": "藏青色",
-  "color_en": "navy blue",
-  "season": ["spring", "fall"],
-  "material": "牛仔布",
-  "material_en": "denim"
+  "name": "黑色棉质T恤",
+  "name_en": "Black Cotton T-shirt",
+  "category": "inner_top",
+  "color": "黑色",
+  "color_en": "black",
+  "season": ["spring", "summer", "fall"],
+  "material": "棉",
+  "material_en": "cotton"
 }"""
           }
         ],
@@ -265,8 +303,10 @@ JSON:
       generated_ids = self.model.generate(
         **inputs,
         max_new_tokens=1024,
-        temperature=0.7,
+        temperature=1.0,
         top_p=0.9,
+        do_sample=True,
+        pad_token_id=self.processor.tokenizer.pad_token_id,
       )
 
     generated_ids_trimmed = [

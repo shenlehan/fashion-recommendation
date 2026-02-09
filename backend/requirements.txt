@@ -6,3 +6,8 @@ python-multipart
 requests
 pillow
 httpx
+
+# RAG向量检索依赖（优先使用ModelScope国内镜像）
+chromadb>=0.4.0
+sentence-transformers>=2.2.0
+modelscope>=1.9.0  # 阿里云模型仓库，国内速度快

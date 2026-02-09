@@ -5,11 +5,14 @@ import "./Wardrobe.css";
 
 // ===== 中英文映射字典 =====
 const CATEGORY_MAP = {
-  'top': '上装',
+  'underwear': '内衣',
+  'inner_top': '内层上衣',
+  'mid_top': '中层上衣',
+  'outer_top': '外层上衣',
   'bottom': '下装',
-  'dress': '连衣裙',
-  'outerwear': '外套',
-  'shoes': '鞋履',
+  'full_body': '全身装',
+  'shoes': '鞋子',
+  'socks': '袜子',
   'accessories': '配饰',
   'unknown': '未知'
 };

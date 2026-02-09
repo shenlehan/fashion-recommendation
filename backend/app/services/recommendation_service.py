@@ -24,7 +24,9 @@ def generate_outfit_recommendations(
       "missing_items": ["thick jacket"]
     }
   except Exception as e:
-    print(f"Error in recommendation service: {e}")
+    print(f"❌ Error in recommendation service: {e}")
+    import traceback
+    traceback.print_exc()
     return {
       "outfits": [
         {"items": wardrobe_items[:2] if len(wardrobe_items) >= 2 else wardrobe_items,

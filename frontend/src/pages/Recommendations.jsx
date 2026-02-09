@@ -4,11 +4,14 @@ import './Recommendations.css';
 
 // ===== 中英文映射字典 =====
 const CATEGORY_MAP = {
-  'top': '上装',
+  'underwear': '内衣',
+  'inner_top': '内层上衣',
+  'mid_top': '中层上衣',
+  'outer_top': '外层上衣',
   'bottom': '下装',
-  'dress': '连衣裙',
-  'outerwear': '外套',
-  'shoes': '鞋履',
+  'full_body': '全身装',
+  'shoes': '鞋子',
+  'socks': '袜子',
   'accessories': '配饰',
   'unknown': '未知'
 };
@@ -18,11 +21,11 @@ const OCCASION_MAP = {
   'Work': '通勤',
   'Business': '商务',
   'Formal': '正式',
-  'Casual': '休闲',
-  'Sport': '运动',
   'Party': '聚会',
   'Date': '约会',
-  'Travel': '旅行'
+  'Travel': '旅行',
+  'Outdoor': '户外',
+  'Home': '居家'
 };
 
 const STYLE_MAP = {
@@ -34,7 +37,8 @@ const STYLE_MAP = {
   'Street': '街头',
   'Trendy': '潮流',
   'Vintage': '复古',
-  'Sporty': '运动'
+  'Athletic': '运动',
+  'Preppy': '学院'
 };
 
 const COLOR_MAP = {
@@ -354,11 +358,11 @@ function Recommendations({ user, isUploading }) {
                 <option value="Work">通勤</option>
                 <option value="Business">商务</option>
                 <option value="Formal">正式</option>
-                <option value="Casual">休闲</option>
-                <option value="Sport">运动</option>
                 <option value="Party">聚会</option>
                 <option value="Date">约会</option>
                 <option value="Travel">旅行</option>
+                <option value="Outdoor">户外</option>
+                <option value="Home">居家</option>
               </select>
             </div>
 
@@ -378,7 +382,8 @@ function Recommendations({ user, isUploading }) {
                 <option value="Street">街头</option>
                 <option value="Trendy">潮流</option>
                 <option value="Vintage">复古</option>
-                <option value="Sporty">运动</option>
+                <option value="Athletic">运动</option>
+                <option value="Preppy">学院</option>
               </select>
             </div>
 
