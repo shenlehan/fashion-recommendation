@@ -182,12 +182,16 @@ class EmbeddingService:
             # 生成查询向量
             query_embedding = self.encoder.encode(query_text, convert_to_numpy=True).tolist()
             
-            # 构建过滤条件
-            where_filter = {"user_id": str(user_id)}
-            
-            # 添加类别过滤
+            # 构建过滤条件（ChromaDB要求多条件使用$and操作符）
             if category_filter:
-                where_filter["category"] = category_filter
+                where_filter = {
+                    "$and": [
+                        {"user_id": str(user_id)},
+                        {"category": category_filter}
+                    ]
+                }
+            else:
+                where_filter = {"user_id": str(user_id)}
             
             # 向量检索
             results = self.wardrobe_collection.query(

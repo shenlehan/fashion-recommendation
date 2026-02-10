@@ -23,6 +23,13 @@ class Settings(BaseSettings):
     "*",
   ]
   DATABASE_URL: str = "sqlite:///./fashion_recommendation.db"
+  
+  # 天气API配置
+  OPENWEATHER_API_KEY: str = ""  # OpenWeatherMap KEY
+  
+  class Config:
+    env_file = ".env"
+    env_file_encoding = "utf-8"
 
 
 settings = Settings()

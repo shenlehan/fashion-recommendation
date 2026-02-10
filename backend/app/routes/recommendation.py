@@ -31,8 +31,13 @@ def get_outfit_recommendations(
   if not user.height or not user.weight:
     raise HTTPException(status_code=400, detail="请先完善个人资料")
 
-  # 获取天气信息
-  weather = {"temperature": 7, "condition": "Sunny"}
+  # 获取天气信息（根据用户城市）
+  city = user.city or "北京"  # 默认北京
+  print(f"\n=== 开始获取天气信息 ===")
+  print(f"🌆 用户城市: {city}")
+  weather = get_weather_by_city(city)
+  print(f"🌡️  天气数据: 温度={weather.get('temperature')}°C, 状况={weather.get('condition')}")
+  print(f"=== 天气获取完成 ===\n")
 
   # ===== RAG向量检索优化（分类平衡策略）=====
   # 1. 构建查询文本（天气 + 场合 + 风格）
