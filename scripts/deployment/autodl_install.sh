@@ -9,8 +9,9 @@ echo "  Fashion Recommendation - AutoDL 部署"
 echo "=============================================="
 echo ""
 
-# 获取项目根目录
-PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# 获取项目根目录（脚本在 scripts/deployment/ 目录下，向上两级即为项目根目录）
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 echo "📁 项目目录: $PROJECT_DIR"
 
 # ===== 1. 检查基础环境 =====
@@ -96,13 +97,24 @@ echo "----------------------------------------------"
 conda activate pytorch
 cd "$PROJECT_DIR/backend"
 
-echo "安装 FastAPI 及其依赖..."
+echo "安装 FastAPI 及其依赖 (包含Redis缓存)..."
 pip install -r requirements.txt -i $PIP_INDEX
 
 echo "安装 Qwen-VL 相关库..."
 pip install transformers>=4.37.0 accelerate>=0.20.0 qwen-vl-utils einops timm -i $PIP_INDEX
 
 echo "✓ 后端依赖安装完成"
+
+# 检查Redis并提示
+ echo ""
+echo "ℹ️  天气系统缓存配置:"
+if command -v redis-server &> /dev/null; then
+    echo "  ✓ Redis 已安装 (优化缓存)"
+else
+    echo "  ⚠ Redis 未安装 (将使用内存缓存)"
+    echo "  可选安装: apt-get install redis-server -y"
+fi
+echo ""
 
 # 初始化数据库
 echo "初始化数据库..."
@@ -219,6 +231,7 @@ echo "💡 提示:"
 echo "  - 首次上传图片时,Qwen3-VL 模型会自动下载 (~16GB)"
 echo "  - 首次使用 VTON 功能时,CatVTON 模型会自动下载 (~5GB)"
 echo "  - 预计总下载: ~25GB,请确保磁盘空间充足"
+echo "  - Redis缓存(可选): 会自动降级为内存缓存，不影响使用"
 echo ""
 echo "🔧 故障排查:"
 echo "  - 查看详细文档: cat AUTODL_SETUP.md"

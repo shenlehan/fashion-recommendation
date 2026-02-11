@@ -33,19 +33,79 @@ def get_outfit_recommendations(
 
   # 获取天气信息（根据用户城市）
   city = user.city or "北京"  # 默认北京
-  print(f"\n=== 开始获取天气信息 ===")
-  print(f"🌆 用户城市: {city}")
   weather = get_weather_by_city(city)
-  print(f"🌡️  天气数据: 温度={weather.get('temperature')}°C, 状况={weather.get('condition')}")
-  print(f"=== 天气获取完成 ===\n")
 
   # ===== RAG向量检索优化（分类平衡策略）=====
-  # 1. 构建查询文本（天气 + 场合 + 风格）
-  query_parts = [f"{weather.get('temperature', 20)}C", weather.get('condition', 'clear')]
+  # 1. 构建查询文本（天气 + 场合 + 风格）- 简化为核心特征
+  
+  temp_max = weather.get('temp_max', 25)
+  temp_min = weather.get('temp_min', 15)
+  avg_temp = (temp_max + temp_min) // 2
+  
+  query_parts = []
+  
+  # 核心特征1：温度描述（只保留最关键的）
+  if avg_temp >= 28:
+    query_parts.append('hot')  # 炎热
+  elif avg_temp >= 20:
+    query_parts.append('warm')  # 温暖
+  elif avg_temp >= 10:
+    query_parts.append('cool')  # 凉爽
+  else:
+    query_parts.append('cold')  # 寒冷
+  
+  # 核心特征2：天气状况（处理趋势并映射为英文）
+  condition = weather.get('condition', 'clear')
+  
+  # 中文天气状况映射回英文（用于向量检索）
+  cn_to_en_map = {
+    '晴': 'sunny',
+    '多云': 'cloudy',
+    '阴': 'overcast',
+    '小雨': 'light rain',
+    '中雨': 'rain',
+    '大雨': 'heavy rain',
+    '暴雨': 'rainstorm',
+    '雷阵雨': 'thunderstorm',
+    '小雪': 'light snow',
+    '中雪': 'snow',
+    '大雪': 'heavy snow',
+    '暴雪': 'snowstorm',
+    '雾': 'foggy',
+    '霾': 'hazy',
+    '沙尘': 'dusty'
+  }
+  
+  if '转' in condition:  # 如"多云转晴"
+    parts = condition.split('转')
+    final_weather_cn = parts[-1]  # 最终状态（中文）
+    final_weather_en = cn_to_en_map.get(final_weather_cn, condition.lower())
+    query_parts.append(final_weather_en)
+  else:
+    # 如果是英文，转为小写；如果是中文，映射为英文
+    if any('\u4e00' <= c <= '\u9fff' for c in condition):
+      # 包含中文字符
+      weather_en = cn_to_en_map.get(condition, condition.lower())
+      query_parts.append(weather_en)
+    else:
+      # 纯英文
+      query_parts.append(condition.lower())
+  
+  # 核心特征3：特殊天气需求（只添加最重要的）
+  rain_prob = weather.get('rain_prob', 0)
+  if rain_prob > 50:
+    query_parts.append('waterproof')  # 高降水概率
+  
+  humidity = weather.get('humidity', 60)
+  if humidity > 75:
+    query_parts.append('breathable')  # 高湿度
+  
+  # 用户偏好
   if occasion:
     query_parts.append(occasion)
   if style:
     query_parts.append(style)
+  
   query_text = " ".join(query_parts)
   
   # 2. 使用分类平衡检索策略
@@ -53,16 +113,14 @@ def get_outfit_recommendations(
     embedding_service = get_embedding_service()
     
     # 按类别检索，确保每类都有代表
-    # 新分类体系：内衣 + 上身3层 + 下身 + 全身 + 鞋子 + 袜子 + 配饰
+    # 新分类体系：上身3层 + 下身 + 全身 + 鞋子 + 配饰（排除内衣和袜子）
     categories = [
-      'underwear',    # 内衣内裤
       'inner_top',    # 内层上衣（打底衫、背心、T恤）
       'mid_top',      # 中层上衣（衬衫、毛衣、卫衣）
       'outer_top',    # 外层上衣（夹克、外套、大衣）
       'bottom',       # 裤子、短裤、裙子
       'full_body',    # 连衣裙、连体裤
       'shoes',        # 鞋子
-      'socks',        # 袜子
       'accessories'   # 包、帽子、围巾、首饰等
     ]
     selected_items = []
@@ -76,15 +134,13 @@ def get_outfit_recommendations(
         category_filter=category
       )
       if category_items:
-        print(f"  • {category}: {category_items}")
-      selected_items.extend(category_items)
+        selected_items.extend(category_items)
     
     # 去重（不限制总数）
     relevant_item_ids = list(dict.fromkeys(selected_items))
     
     if not relevant_item_ids:
       # 降级方案：向量检索失败时使用全量查询
-      print(f"⚠️  向量检索无结果，降级为全量查询")
       wardrobe = db.query(WardrobeItem).filter(WardrobeItem.user_id == user_id).all()
     else:
       # 从数据库批量查询检索到的衣物
@@ -94,12 +150,9 @@ def get_outfit_recommendations(
       # 按向量检索的相关性排序
       id_to_item = {item.id: item for item in wardrobe}
       wardrobe = [id_to_item[item_id] for item_id in relevant_item_ids if item_id in id_to_item]
-      
-      print(f"✅ 分类平衡检索成功：从 {len(relevant_item_ids)} 件衣物中推荐（包含多类别）")
   
   except Exception as e:
     # 向量检索异常降级处理
-    print(f"⚠️  向量检索异常，降级为全量查询: {e}")
     wardrobe = db.query(WardrobeItem).filter(WardrobeItem.user_id == user_id).all()
   
   # ===== 构建衣物列表 =====

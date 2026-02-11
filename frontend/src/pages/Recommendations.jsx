@@ -48,23 +48,42 @@ const COLOR_MAP = {
 };
 
 const WEATHER_MAP = {
+  // 晴朗天气
   'Sunny': '晴',
+  'Clear': '晴朗',
+  
+  // 云层相关
   'Cloudy': '多云',
   'Overcast': '阴',
+  'Partly Cloudy': '局部多云',
+  
+  // 降雨相关（按中国气象标准细分）
   'Rainy': '雨',
   'Light Rain': '小雨',
+  'Moderate Rain': '中雨',
   'Heavy Rain': '大雨',
+  'Rainstorm': '暴雨',
+  'Drizzle': '毛毛雨',
+  'Thunderstorm': '雷阵雨',
+  'Sleet': '雨夹雪',
+  
+  // 降雪相关（按中国气象标准细分）
   'Snowy': '雪',
   'Light Snow': '小雪',
+  'Moderate Snow': '中雪',
   'Heavy Snow': '大雪',
-  'Windy': '有风',
+  'Snowstorm': '暴雪',
+  
+  // 雾霾相关
   'Foggy': '雾',
   'Hazy': '霾',
-  'Clear': '晴朗',
-  'Partly Cloudy': '局部多云',
-  'Thunderstorm': '雷阵雨',
-  'Drizzle': '毛毛雨',
-  'Sleet': '雨夹雪'
+  'Dusty': '沙尘',
+  
+  // 风相关
+  'Windy': '有风',
+  
+  // 极端天气
+  'Extreme': '极端天气'
 };
 
 const translateCategory = (category) => {
@@ -84,6 +103,20 @@ const translateColor = (color) => {
 };
 
 const translateWeather = (condition) => {
+  if (!condition) return '未知';
+  
+  // 如果已经是中文趋势格式（如"多云转晴"），直接返回
+  if (condition.includes('转')) {
+    return condition;
+  }
+  
+  // 判断是否为纯中文（已翻译）
+  const hasChinese = /[\u4e00-\u9fff]/.test(condition);
+  if (hasChinese) {
+    return condition;  // 已经是中文，直接返回
+  }
+  
+  // 英文 → 中文翻译
   return WEATHER_MAP[condition] || condition;
 };
 
@@ -448,8 +481,17 @@ function Recommendations({ user, isUploading }) {
           <div className="weather-info">
             <h2>生成本次推荐时{user.city || '你所在城市'}的天气</h2>
             <div className="weather-details">
-              <p>温度：{recommendations.weather?.temperature || '未知'}°C</p>
+              <p>温度：{recommendations.weather?.temp_min || '未知'}~{recommendations.weather?.temp_max || '未知'}°C</p>
               <p>天气：{translateWeather(recommendations.weather?.condition) || '未知'}</p>
+              {recommendations.weather?.humidity && (
+                <p>湿度：{recommendations.weather.humidity}%</p>
+              )}
+              {recommendations.weather?.wind_speed !== undefined && (
+                <p>风速：{recommendations.weather.wind_speed} m/s</p>
+              )}
+              {recommendations.weather?.rain_prob !== undefined && recommendations.weather.rain_prob > 0 && (
+                <p>降水概率：{recommendations.weather.rain_prob}%</p>
+              )}
             </div>
           </div>
 

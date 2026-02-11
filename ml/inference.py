@@ -109,17 +109,35 @@ RULES:
 4. color_en: Output in ENGLISH - main color (e.g., "black", "white")
 5. material: Output in CHINESE (中文) - 面料中文名 (e.g., "棉", "牛仔布")
 6. material_en: Output in ENGLISH - fabric type (e.g., "cotton", "denim")
-7. category: Choose ONE based on garment type and layering:
-   - underwear: bra, underwear, ...
-   - inner_top: T-shirt, tank top, undershirt, ... (thin, fitted, worn next to skin)
-   - mid_top: shirt, sweater, hoodie, cardigan, ... (structured tops, can be worn alone)
-   - outer_top: jacket, coat, down jacket, windbreaker, ... (outerwear, worn over other layers)
-   - bottom: pants, shorts, skirt, ...
-   - full_body: dress, jumpsuit, ...
-   - shoes: all footwear
-   - socks: all socks
-   - accessories: bag, hat, scarf, gloves, jewelry, ...
+7. category: Classify tops by SLEEVES FIRST, then by structure:
+   
+   DECISION TREE:
+   Step 1 - Check sleeves:
+   - NO sleeves (tank/camisole/vest) → inner_top
+   - HAS sleeves → Continue to Step 2
+   
+   Step 2 - Check structure:
+   - Thin/casual (T-shirt, thin top) → inner_top
+   - Structured/standalone (shirt, sweater, polo, hoodie) → mid_top
+   - Outerwear (jacket, coat, blazer) → outer_top
+   
+   EXAMPLES:
+   - inner_top: T-shirt, tank top, camisole, sleeveless shirt
+   - mid_top: Dress shirt, sweater, polo, hoodie, cardigan
+   - outer_top: Jacket, coat, blazer, windbreaker
+   
+   OTHER CATEGORIES:
+   - underwear: Undergarments (bra, underwear)
+   - bottom: Pants, shorts, skirts
+   - full_body: One-piece garments (dress, jumpsuit, romper)
+   - shoes: All footwear
+   - socks: All socks and hosiery
+   - accessories: Bags, hats, scarves, gloves, jewelry
+
 8. season: Select ALL applicable from [spring, summer, fall, winter]
+   - Thin/short items: [spring, summer, fall]
+   - Thick/warm items: [fall, winter]
+   - Mid-weight: [spring, fall, winter] or [spring, summer, fall]
 
 JSON:
 {
@@ -203,18 +221,64 @@ JSON:
       user_profile: Dict[str, Any],
       preferences: Optional[Dict[str, Any]] = None
   ) -> Dict[str, Any]:
-    # 使用英文字段构建纯英文Prompt
-    wardrobe_text = "\n".join([
-      f"- Item {i + 1}: {item.get('name_en', item.get('name', 'Unknown'))} "
-      f"(category: {item.get('category', 'unknown')}, "
-      f"color: {item.get('color_en', item.get('color', 'unknown'))}, "
-      f"seasons: {item.get('season', 'all')}, "
-      f"material: {item.get('material_en', item.get('material', 'unknown'))})"
-      for i, item in enumerate(wardrobe_items)
-    ])
+    # 按类别分组衣物（减少LLM搜索成本）
+    categorized = {}
+    for item in wardrobe_items:
+      category = item.get('category', 'unknown')
+      if category not in categorized:
+        categorized[category] = []
+      categorized[category].append(item)
+    
+    # 构建分类展示的衣物列表
+    wardrobe_sections = []
+    item_counter = 0
+    
+    # 定义类别顺序和标签
+    category_order = [
+      ('inner_top', 'INNER LAYER'),
+      ('mid_top', 'MID LAYER'),
+      ('outer_top', 'OUTER LAYER'),
+      ('bottom', 'BOTTOM'),
+      ('full_body', 'FULL BODY'),
+      ('shoes', 'SHOES'),
+      ('socks', 'SOCKS'),
+      ('accessories', 'ACCESSORIES'),
+      ('underwear', 'UNDERWEAR')
+    ]
+    
+    for category_key, category_label in category_order:
+      items = categorized.get(category_key, [])
+      if items:
+        items_text = []
+        for item in items:
+          item_counter += 1
+          items_text.append(
+            f"{item_counter}. {item.get('name_en', 'Unknown')} "
+            f"({item.get('color_en', 'unknown')}, {item.get('material_en', 'unknown')})"
+          )
+        wardrobe_sections.append(f"{category_label}:\n" + "\n".join(items_text))
+    
+    wardrobe_text = "\n\n".join(wardrobe_sections)
 
-    weather_text = f"Temperature: {weather.get('temperature', 'N/A')}°C, " \
-                   f"Condition: {weather.get('condition', 'N/A')}"
+    # 构建天气信息文本（使用正确的字段名）
+    temp_max = weather.get('temp_max', 'N/A')
+    temp_min = weather.get('temp_min', 'N/A')
+    condition = weather.get('condition', 'N/A')
+    humidity = weather.get('humidity', 'N/A')
+    wind_speed = weather.get('wind_speed', 'N/A')
+    rain_prob = weather.get('rain_prob', 0)
+    
+    weather_parts = [f"Temperature: {temp_min}~{temp_max}°C"]
+    weather_parts.append(f"Condition: {condition}")
+    
+    if humidity != 'N/A':
+      weather_parts.append(f"Humidity: {humidity}%")
+    if wind_speed != 'N/A':
+      weather_parts.append(f"Wind: {wind_speed}m/s")
+    if rain_prob > 0:
+      weather_parts.append(f"Rain probability: {rain_prob}%")
+    
+    weather_text = ", ".join(weather_parts)
 
     # 生成用户信息文本
     user_parts = []
@@ -260,24 +324,28 @@ WARDROBE:
 {wardrobe_text}{pref_text}
 
 RULES:
-1. Generate 2-3 complete outfits (shoes to outerwear)
-2. Use item numbers from wardrobe list
-3. Match weather and style preferences
-4. Provide styling tips in description
-5. IMPORTANT: Output ALL descriptions in CHINESE (中文), including outfit description and missing item reasons
+1. Generate 2-3 complete outfits
+2. Use item numbers from wardrobe list ONLY
+3. SELECTION RULES:
+   - TOPS: Must include at least one (can select multiple from different layers)
+   - BOTTOM: Exactly one if available
+   - SHOES: Exactly one if available
+   - ACCESSORIES: Optional
+   - FULL BODY: Replaces top and bottom
+4. For missing_items: Suggest SPECIFIC items with colors and styles, NOT generic categories
 
 JSON:
 {{
   "outfits": [
     {{
-      "items": [1, 3, 5],
-      "description": "用中文描述完整搭配和穿搭建议"
+      "items": [1, 3, 5, 8],
+      "description": "<outfit description in Chinese>"
     }}
   ],
   "missing_items": [
     {{
-      "category": "具体单品名称（中文）",
-      "reason": "用中文说明为什么需要这个单品"
+      "category": "<item category in Chinese>",
+      "reason": "<reason in Chinese>"
     }}
   ]
 }}"""

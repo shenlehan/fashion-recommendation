@@ -606,52 +606,74 @@ useEffect(() => {
           <p>你的衣橱还是空的，快来添加第一件衣物吧！</p>
         </div>
       ) : (
-        <div className="wardrobe-grid">
-          {wardrobe.map((item) => (
-            <div 
-              key={item.id} 
-              className={`wardrobe-item ${isSelectionMode ? 'selectable' : ''} ${selectedItems.includes(item.id) ? 'selected' : ''}`}
-              onClick={() => isSelectionMode && toggleItemSelection(item.id)}
-            >
-              {isSelectionMode && (
-                <div className="selection-checkbox">
-                  <input 
-                    type="checkbox" 
-                    checked={selectedItems.includes(item.id)}
-                    onChange={() => toggleItemSelection(item.id)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
+        <div className="wardrobe-categorized">
+          {/* 按类别分组显示 */}
+          {[
+            { key: 'inner_top', label: '内层上衣' },
+            { key: 'mid_top', label: '中层上衣' },
+            { key: 'outer_top', label: '外层上衣' },
+            { key: 'bottom', label: '下装' },
+            { key: 'full_body', label: '全身装' },
+            { key: 'shoes', label: '鞋子' },
+            { key: 'socks', label: '袜子' },
+            { key: 'accessories', label: '配饰' },
+            { key: 'underwear', label: '内衣' },
+          ].map(({ key, label }) => {
+            const items = wardrobe.filter(item => item.category === key);
+            if (items.length === 0) return null;
+            
+            return (
+              <div key={key} className="wardrobe-category-section">
+                <h2 className="category-title">{label} ({items.length})</h2>
+                <div className="wardrobe-grid">
+                  {items.map((item) => (
+                    <div 
+                      key={item.id} 
+                      className={`wardrobe-item ${isSelectionMode ? 'selectable' : ''} ${selectedItems.includes(item.id) ? 'selected' : ''}`}
+                      onClick={() => isSelectionMode && toggleItemSelection(item.id)}
+                    >
+                      {isSelectionMode && (
+                        <div className="selection-checkbox">
+                          <input 
+                            type="checkbox" 
+                            checked={selectedItems.includes(item.id)}
+                            onChange={() => toggleItemSelection(item.id)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      )}
+                      <div className="item-image">
+                        {item.image_path ? (
+                          <img
+                            src={getImageUrl(item.image_path, item.id)}
+                            alt={item.name}
+                          />
+                        ) : (
+                          <div className="no-image">无图片</div>
+                        )}
+                      </div>
+                      <div className="item-details">
+                        <h3>{item.name}</h3>
+                        <div className="item-info">
+                          {item.color && <span className="badge color">{item.color}</span>}
+                        </div>
+                        {item.season && <p className="season">季节：{translateSeasons(item.season)}</p>}
+                        {item.material && <p className="material">材质：{item.material}</p>}
+                        {!isSelectionMode && (
+                          <button
+                            className="btn-delete"
+                            onClick={() => handleDelete(item.id)}
+                          >
+                            删除
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              )}
-              <div className="item-image">
-                {item.image_path ? (
-                  <img
-                    src={getImageUrl(item.image_path, item.id)}
-                    alt={item.name}
-                  />
-                ) : (
-                  <div className="no-image">无图片</div>
-                )}
               </div>
-              <div className="item-details">
-                <h3>{item.name}</h3>
-                <div className="item-info">
-                  <span className="badge">{translateCategory(item.category)}</span>
-                  {item.color && <span className="badge color">{item.color}</span>}
-                </div>
-                {item.season && <p className="season">季节：{translateSeasons(item.season)}</p>}
-                {item.material && <p className="material">材质：{item.material}</p>}
-                {!isSelectionMode && (
-                  <button
-                    className="btn-delete"
-                    onClick={() => handleDelete(item.id)}
-                  >
-                    删除
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

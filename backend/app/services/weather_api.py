@@ -1,6 +1,31 @@
 import requests
 from typing import Dict, Any, Optional
 from app.core.config import settings
+from datetime import datetime, timedelta
+import time
+import redis
+import json
+
+# Redis缓存配置
+try:
+  redis_client = redis.Redis(
+    host='localhost',
+    port=6379,
+    db=0,
+    decode_responses=True,  # 自动解码为字符串
+    socket_connect_timeout=2,
+    socket_timeout=2
+  )
+  # 测试连接
+  redis_client.ping()
+  REDIS_AVAILABLE = True
+except (redis.ConnectionError, redis.TimeoutError):
+  redis_client = None
+  REDIS_AVAILABLE = False
+
+# 降级方案：内存缓存（仅当Redis不可用时）
+_memory_cache: Dict[str, Dict[str, Any]] = {}
+CACHE_DURATION = 7200  # 2小时缓存（从30分钟延长）
 
 
 # 中文城市名到OpenWeather查询格式的映射（覆盖全国所有地级市及以上城市）
@@ -418,33 +443,68 @@ CITY_NAME_MAP = {
 
 def get_weather_by_city(city: str) -> Dict[str, Any]:
   """
-  获取城市实时天气
-  使用OpenWeatherMap API，失败时降级为mock数据
+  获取城市天气预报（带Redis缓存）
+  使用OpenWeatherMap Forecast API，失败时降级为mock数据
   
   Args:
     city: 城市名称（支持中文或英文）
     
   Returns:
-    包含temperature(温度)、condition(天气状况)的字典
+    包含temp_max(最高温)、temp_min(最低温)、condition(天气状况)、
+    humidity(湿度)、wind_speed(风速)、rain_prob(降水概率)的字典
   """
+  cache_key = f"weather:{city}"
+  
+  # 检查Redis缓存
+  if REDIS_AVAILABLE:
+    try:
+      cached_data = redis_client.get(cache_key)
+      if cached_data:
+        return json.loads(cached_data)
+    except Exception:
+      pass
+  else:
+    # 降级：使用内存缓存
+    current_time = time.time()
+    if city in _memory_cache:
+      cached_data = _memory_cache[city]
+      if current_time < cached_data['expires_at']:
+        return cached_data['data']
+  
   # 转换中文城市名为OpenWeather格式
   query_city = CITY_NAME_MAP.get(city, city)
   weather = _get_openweather(query_city)
   
   if weather:
+    # 存入缓存
+    if REDIS_AVAILABLE:
+      try:
+        # Redis缓存，2小时过期
+        redis_client.setex(cache_key, CACHE_DURATION, json.dumps(weather, ensure_ascii=False))
+      except Exception:
+        pass
+    else:
+      # 降级：存入内存缓存
+      _memory_cache[city] = {
+        'data': weather,
+        'expires_at': time.time() + CACHE_DURATION
+      }
     return weather
   
   # 降级：返回mock数据
-  print(f"⚠️  天气API调用失败，返回默认天气: {city}")
   return {
-    "temperature": 20,
-    "condition": "Sunny"
+    "temp_max": 25,
+    "temp_min": 15,
+    "condition": "Sunny",
+    "humidity": 60,
+    "wind_speed": 3,
+    "rain_prob": 0
   }
 
 
 def _get_openweather(city: str) -> Optional[Dict[str, Any]]:
   """
-  调用OpenWeatherMap API
+  调用OpenWeatherMap Forecast API获取当日准确的最高最低温
   
   Args:
     city: 城市名（应为"City,CN"格式）
@@ -455,46 +515,212 @@ def _get_openweather(city: str) -> Optional[Dict[str, Any]]:
     return None
   
   try:
-    url = f"http://api.openweathermap.org/data/2.5/weather"
+    # 使用5天预报API（免费，每3小时一个数据点）
+    url = f"http://api.openweathermap.org/data/2.5/forecast"
     params = {
       "q": city,
       "appid": api_key,
       "units": "metric",  # 摄氏度
-      "lang": "zh_cn"
+      "lang": "zh_cn",
+      "cnt": 16  # 获取未来48小时数据，用于筛选当日
     }
     response = requests.get(url, params=params, timeout=5)
     data = response.json()
     
-    if data.get("cod") != 200:
-      print(f"❌ OpenWeather API返回错误: {data.get('cod')}, message={data.get('message')}, city={city}")
+    if data.get("cod") != "200":  # 注意：forecast API返回字符串"200"
+      print(f"❌ OpenWeather Forecast API返回错误: {data.get('cod')}, message={data.get('message')}, city={city}")
       return None
     
-    temp = int(data["main"]["temp"])
-    weather_main = data["weather"][0]["main"]
-    weather_desc = data["weather"][0].get("description", "")
+    # 从预报数据中筛选当日数据（更准确）
+    forecast_list = data.get("list", [])
+    if not forecast_list:
+      print(f"⚠️  无预报数据: {city}")
+      return None
     
-    # 映射到标准天气状态
-    condition_map = {
-      "Clear": "Sunny",
-      "Clouds": "Cloudy",
-      "Rain": "Rainy",
-      "Snow": "Snowy",
-      "Drizzle": "Light Rain",
-      "Thunderstorm": "Rainy",
-      "Mist": "Foggy",
-      "Fog": "Foggy",
-      "Haze": "Foggy"
-    }
-    condition = condition_map.get(weather_main, "Cloudy")
+    # 获取当日日期（本地时区）
+    from datetime import datetime
+    today = datetime.now().date()
     
-    print(f"✅ 获取到 {city} 实时天气: {temp}°C {weather_main}")
+    # 筛选当日的预报数据
+    today_forecast = []
+    for item in forecast_list:
+      # dt 是 UTC时间戳，转换为本地日期（简化处理，假设东八区）
+      forecast_dt = datetime.fromtimestamp(item["dt"])
+      if forecast_dt.date() == today:
+        today_forecast.append(item)
+    
+    # 如果没有当日数据，使用未来24小时
+    if not today_forecast:
+      today_forecast = forecast_list[:8]  # 降级为24小时
+      print(f"⚠️  无当日数据，使用24小时预报: {city}")
+    
+    # 提取所有温度值（使用筛选后的当日数据）
+    temps = [item["main"]["temp"] for item in today_forecast]
+    temp_max = int(max(temps))
+    temp_min = int(min(temps))
+    
+    # 计算平均湿度
+    humidities = [item["main"]["humidity"] for item in today_forecast]
+    avg_humidity = int(sum(humidities) / len(humidities))
+    
+    # 计算平均风速 (m/s)
+    wind_speeds = [item["wind"]["speed"] for item in today_forecast]
+    avg_wind_speed = round(sum(wind_speeds) / len(wind_speeds), 1)
+    
+    # 计算降水概率（取最大值）
+    rain_probs = [item.get("pop", 0) * 100 for item in today_forecast]  # pop: probability of precipitation
+    max_rain_prob = int(max(rain_probs)) if rain_probs else 0
+    
+    # 使用第一个数据点的天气状况（最近的天气）
+    weather_main = today_forecast[0]["weather"][0]["main"]
+    weather_desc = today_forecast[0]["weather"][0].get("description", "")
+    weather_id = today_forecast[0]["weather"][0].get("id", 0)
+    
+    # 提取降水量/降雪量数据（用于细分强度）
+    rain_volume = today_forecast[0].get("rain", {}).get("3h", 0)  # 3小时降水量
+    snow_volume = today_forecast[0].get("snow", {}).get("3h", 0)  # 3小时降雪量
+    
+    # 分析天气趋势（检测是否有变化）
+    weather_trend = None
+    if len(today_forecast) >= 4:  # 至少12小时数据
+      # 前半段和后半段的主要天气
+      mid_point = len(today_forecast) // 2
+      first_half = [item["weather"][0]["main"] for item in today_forecast[:mid_point]]
+      second_half = [item["weather"][0]["main"] for item in today_forecast[mid_point:]]
+      
+      # 统计最常出现的天气
+      from collections import Counter
+      first_common = Counter(first_half).most_common(1)[0][0]
+      second_common = Counter(second_half).most_common(1)[0][0]
+      
+      # 判断天气转变
+      if first_common != second_common:
+        weather_trend = f"{first_common}→{second_common}"
+    
+    # 映射到标准天气状态（扩展版，支持降水强度细分）
+    condition = None
+    
+    # 先处理降雨，根据降水量细分（按中国气象标准）
+    # 小雨: 12小时降水量 < 5mm 或 24小时降水量 < 10mm
+    # 中雨: 12小时降水量 5-15mm 或 24小时降水量 10-25mm
+    # 大雨: 12小时降水量 15-30mm 或 24小时降水量 25-50mm
+    # 暴雨: 12小时降水量 30-70mm 或 24小时降水量 50-100mm
+    # 转换为3小时标准：小雨<1.25mm, 中雨1.25-3.75mm, 大雨3.75-12.5mm, 暴雨>12.5mm
+    if weather_main == "Rain" or weather_main == "Drizzle":
+      if rain_volume > 0:
+        if rain_volume < 1.25:
+          condition = "Light Rain"
+        elif rain_volume < 3.75:
+          condition = "Moderate Rain"
+        elif rain_volume < 12.5:
+          condition = "Heavy Rain"
+        else:
+          condition = "Rainstorm"  # 暴雨
+      else:
+        # 没有降水量数据，根据 weather_id 判断
+        if weather_id in [500, 520, 300, 301, 310, 311]:  # 小雨
+          condition = "Light Rain"
+        elif weather_id in [501, 521, 302, 312, 313]:  # 中雨
+          condition = "Moderate Rain"
+        elif weather_id in [502, 522, 314, 321]:  # 大雨
+          condition = "Heavy Rain"
+        elif weather_id in [503, 504, 522, 531]:  # 暴雨
+          condition = "Rainstorm"
+        elif weather_id >= 300 and weather_id < 400:  # 其他Drizzle
+          condition = "Light Rain"
+        else:
+          condition = "Moderate Rain"  # 默认中雨
+    
+    # 处理降雪，根据降雪量细分（按中国气象标准）
+    # 小雪: 12小时降雪量 < 2.5mm 或 24小时降雪量 < 5mm
+    # 中雪: 12小时降雪量 2.5-5mm 或 24小时降雪量 5-10mm
+    # 大雪: 12小时降雪量 5-10mm 或 24小时降雪量 10-20mm
+    # 暴雪: 12小时降雪量 > 10mm 或 24小时降雪量 > 20mm
+    # 转换为3小时标准：小雪<0.625mm, 中雪0.625-1.25mm, 大雪1.25-2.5mm, 暴雪>2.5mm
+    elif weather_main == "Snow":
+      if snow_volume > 0:
+        if snow_volume < 0.625:
+          condition = "Light Snow"
+        elif snow_volume < 1.25:
+          condition = "Moderate Snow"
+        elif snow_volume < 2.5:
+          condition = "Heavy Snow"
+        else:
+          condition = "Snowstorm"  # 暴雪
+      else:
+        # 没有降雪量数据，根据 weather_id 判断
+        if weather_id in [600, 620, 611, 612]:  # 小雪
+          condition = "Light Snow"
+        elif weather_id in [601, 621, 613]:  # 中雪
+          condition = "Moderate Snow"
+        elif weather_id in [602, 622]:  # 大雪
+          condition = "Heavy Snow"
+        else:
+          condition = "Moderate Snow"  # 默认中雪
+    
+    # 其他天气类型使用原有映射
+    else:
+      condition_map = {
+        # 晴朗天气
+        "Clear": "Sunny",
+        
+        # 云层相关
+        "Clouds": "Cloudy",
+        
+        # 雷阵雨
+        "Thunderstorm": "Thunderstorm",
+        "Squall": "Rainy",
+        
+        # 雾霾相关
+        "Mist": "Foggy",
+        "Fog": "Foggy",
+        "Haze": "Hazy",
+        "Smoke": "Hazy",
+        "Dust": "Dusty",
+        "Sand": "Dusty",
+        "Ash": "Hazy",
+        
+        # 极端天气
+        "Tornado": "Extreme"
+      }
+      condition = condition_map.get(weather_main, "Cloudy")
+    
+    # 处理天气趋势：如果有转变，合并到condition字段
+    if weather_trend:
+      # 重新映射趋势中的天气状态
+      trend_parts = weather_trend.split("→")
+      if len(trend_parts) == 2:
+        # 使用同样的逻辑映射趋势中的天气
+        def map_weather(w):
+          if w == "Rain" or w == "Drizzle":
+            return "中雨"  # 默认中雨
+          elif w == "Snow":
+            return "中雪"  # 默认中雪
+          else:
+            simple_map = {
+              "Clear": "晴", "Clouds": "多云", "Thunderstorm": "雷阵雨",
+              "Mist": "雾", "Fog": "雾", "Haze": "霾", "Dust": "沙尘"
+            }
+            return simple_map.get(w, "多云")
+        
+        start_cn = map_weather(trend_parts[0])
+        end_cn = map_weather(trend_parts[1])
+        # 合并到condition，格式："多云转晴"
+        condition = f"{start_cn}转{end_cn}"
+    
+    print(f"✅ 获取到 {city} 天气预报: {temp_min}~{temp_max}°C {condition}, 湿度{avg_humidity}%, 风速{avg_wind_speed}m/s, 降水概率{max_rain_prob}%")
+    
     return {
-      "temperature": temp,
-      "condition": condition
+      "temp_max": temp_max,
+      "temp_min": temp_min,
+      "condition": condition,  # 已包含趋势（如"多云转晴"）
+      "humidity": avg_humidity,
+      "wind_speed": avg_wind_speed,
+      "rain_prob": max_rain_prob
     }
     
   except Exception as e:
-    print(f"❌ OpenWeather API调用异常: {e}")
+    print(f"❌ OpenWeather Forecast API调用异常: {e}")
     import traceback
     traceback.print_exc()
     return None
