@@ -12,3 +12,6 @@ redis>=4.5.0  # 天气数据缓存
 chromadb>=0.4.0
 sentence-transformers>=2.2.0
 modelscope>=1.9.0  # 阿里云模型仓库，国内速度快
+transformers>=4.37.0  # CLIP模型依赖
+torch>=2.0.0  # PyTorch（CLIP依赖）
+torchvision>=0.15.0  # 图像预处理

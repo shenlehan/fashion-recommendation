@@ -51,8 +51,8 @@ bash start.sh
 
 **启动的服务:**
 - 🎨 VTON AI Server (端口 8001) - 虚拟试衣
-- 🚀 Backend API (端口 8000) - FastAPI + Qwen3-VL
-- 💻 Frontend (端口 3000) - React 界面
+- 🚀 Backend API (端口 6008) - FastAPI + Qwen3-VL
+- 💻 Frontend (端口 6006) - React 界面
 
 ---
 
@@ -61,7 +61,7 @@ bash start.sh
 启动成功后,在浏览器访问:
 
 ```
-http://你的AutoDL实例IP:3000
+http://你的AutoDL实例IP:6006
 ```
 
 **获取实例 IP:**
@@ -70,7 +70,7 @@ http://你的AutoDL实例IP:3000
 
 **API 文档:**
 ```
-http://你的AutoDL实例IP:8000/docs
+http://你的AutoDL实例IP:6008/docs
 ```
 
 ---
@@ -109,12 +109,12 @@ bash stop.sh
 
 ## ⚙️ 手动启动 (如果自动脚本失败)
 
-### 后端 (端口 8000)
+### 后端 (端口 6008)
 ```bash
 cd /root/autodl-tmp/fashion-recommendation/backend
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate pytorch
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+uvicorn app.main:app --host 0.0.0.0 --port 6008
 ```
 
 ### VTON 服务 (端口 8001)
@@ -125,7 +125,7 @@ conda activate catvton
 python vton_server.py
 ```
 
-### 前端 (端口 3000)
+### 前端 (端口 6006)
 ```bash
 cd /root/autodl-tmp/fashion-recommendation/frontend
 source ~/.nvm/nvm.sh  # 如果使用了 NVM
@@ -140,7 +140,7 @@ npm run dev
 
 ```bash
 # 查看端口占用
-netstat -tulnp | grep -E "3000|8000|8001"
+netstat -tulnp | grep -E "6006|6008|8001"
 
 # 杀死占用进程
 kill -9 <PID>
@@ -171,7 +171,7 @@ python download_model.py
 ### 4. 前端无法连接后端
 
 **检查清单:**
-1. 后端是否启动: `curl http://localhost:8000/health`
+1. 后端是否启动: `curl http://localhost:6008/health`
 2. AutoDL 端口是否开放 (默认全开)
 3. 前端 `.env` 配置是否正确
 
@@ -180,7 +180,7 @@ python download_model.py
 cat /root/autodl-tmp/fashion-recommendation/frontend/.env
 
 # 应该显示 (替换为你的实例 IP):
-# VITE_API_BASE_URL=http://<你的IP>:8000
+# VITE_API_BASE_URL=http://<你的IP>:6008
 ```
 
 ---
@@ -214,7 +214,7 @@ cat /root/autodl-tmp/fashion-recommendation/frontend/.env
 
 ### 1. 测试后端健康检查
 ```bash
-curl http://localhost:8000/health
+curl http://localhost:6008/health
 # 应返回: {"status":"healthy"}
 ```
 
@@ -225,7 +225,7 @@ curl -X POST http://localhost:8001/process_tryon
 ```
 
 ### 3. 测试前端
-浏览器访问 `http://<你的IP>:3000`,应该能看到登录页面。
+浏览器访问 `http://<你的IP>:6006`,应该能看到登录页面。
 
 ---
 
@@ -272,8 +272,8 @@ curl -X POST http://localhost:8001/process_tryon
 - [ ] 代码已上传到 `/root/autodl-tmp/fashion-recommendation`
 - [ ] 已执行 `bash scripts/deployment/autodl_install.sh`
 - [ ] 已执行 `bash start.sh`
-- [ ] 能访问 `http://<IP>:3000`
-- [ ] 后端健康检查通过 `curl http://localhost:8000/health`
+- [ ] 能访问 `http://<IP>:6006`
+- [ ] 后端健康检查通过 `curl http://localhost:6008/health`
 - [ ] GPU 可用 `nvidia-smi` 有输出
 
 全部打勾即可正常使用! 🎉

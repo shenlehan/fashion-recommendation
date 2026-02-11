@@ -41,8 +41,8 @@ bash start.sh
 ```
 
 服务启动后访问:
-- 前端: `http://你的实例IP:3000`
-- 后端API: `http://你的实例IP:8000/docs`
+- 前端: `http://你的实例IP:6006`
+- 后端API: `http://你的实例IP:6008/docs`
 - VTON服务: `http://你的实例IP:8001`
 
 ---
@@ -131,14 +131,7 @@ huggingface-cli download zhengchong/CatVTON --local-dir ./CatVTON/model/catvton
 huggingface-cli download booksforcharlie/stable-diffusion-inpainting --local-dir ./CatVTON/model/sd-inpainting
 ```
 
-### Step 4: 数据库初始化
-```bash
-cd /root/autodl-tmp/fashion-recommendation/backend
-conda activate pytorch
-python init_db.py
-```
-
-### Step 5: 配置环境变量
+### Step 4: 配置环境变量
 
 #### 5.1 后端环境变量
 ```bash
@@ -153,11 +146,11 @@ EOF
 ```bash
 # frontend/.env
 cat > /root/autodl-tmp/fashion-recommendation/frontend/.env << 'EOF'
-VITE_API_BASE_URL=http://你的实例IP:8000
+VITE_API_BASE_URL=http://你的实例IP:6008
 EOF
 ```
 
-### Step 6: 启动服务
+### Step 5: 启动服务
 
 #### 方法1: 使用启动脚本 (推荐)
 ```bash
@@ -172,12 +165,12 @@ cd /root/autodl-tmp/fashion-recommendation/ml
 conda activate catvton
 python vton_server.py
 
-# Terminal 2: 启动 Backend (端口 8000)
+# Terminal 2: 启动 Backend (端口 6008)
 cd /root/autodl-tmp/fashion-recommendation/backend
 conda activate pytorch
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+uvicorn app.main:app --host 0.0.0.0 --port 6008
 
-# Terminal 3: 启动 Frontend (端口 3000)
+# Terminal 3: 启动 Frontend (端口 6006)
 cd /root/autodl-tmp/fashion-recommendation/frontend
 npm run dev
 ```
@@ -189,7 +182,7 @@ npm run dev
 ### 1. 端口被占用
 ```bash
 # 查看端口占用
-netstat -tulnp | grep -E "3000|8000|8001"
+netstat -tulnp | grep -E "6006|6008|8001"
 
 # 杀死进程
 kill -9 <PID>
@@ -219,9 +212,9 @@ export HF_ENDPOINT=https://hf-mirror.com
 
 ### 4. 前端无法连接后端
 检查:
-1. AutoDL 安全组开放 3000, 8000, 8001 端口
+1. AutoDL 安全组开放 6006, 6008, 8001 端口
 2. `frontend/.env` 中的 API 地址是否正确
-3. 后端是否正常启动: `curl http://localhost:8000/health`
+3. 后端是否正常启动: `curl http://localhost:6008/health`
 
 ### 5. 查看日志
 ```bash
@@ -317,8 +310,8 @@ ssh -p <端口> root@<实例IP>
 AutoDL 自动映射所有端口,无需额外配置。
 
 访问地址:
-- `http://<实例IP>:3000` (前端)
-- `http://<实例IP>:8000` (后端)
+- `http://<实例IP>:6006` (前端)
+- `http://<实例IP>:6008` (后端)
 - `http://<实例IP>:8001` (VTON)
 
 ---

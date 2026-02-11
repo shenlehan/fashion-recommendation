@@ -139,20 +139,20 @@ PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 echo ""
 echo "[7] 端口状态"
 echo "----------------------------------------------"
-PORT_3000=$(netstat -tlnp 2>/dev/null | grep ":3000 " || ss -tlnp 2>/dev/null | grep ":3000 ")
-if [ -z "$PORT_3000" ]; then
-    check_item 0 "端口 3000 (前端) 空闲"
+PORT_6006=$(netstat -tlnp 2>/dev/null | grep ":6006 " || ss -tlnp 2>/dev/null | grep ":6006 ")
+if [ -z "$PORT_6006" ]; then
+    check_item 0 "端口 6006 (前端) 空闲"
 else
-    echo -e "${YELLOW}⚠${NC} 端口 3000 已被占用"
-    echo "  $PORT_3000"
+    echo -e "${YELLOW}⚠${NC} 端口 6006 已被占用"
+    echo "  $PORT_6006"
 fi
 
-PORT_8000=$(netstat -tlnp 2>/dev/null | grep ":8000 " || ss -tlnp 2>/dev/null | grep ":8000 ")
-if [ -z "$PORT_8000" ]; then
-    check_item 0 "端口 8000 (后端) 空闲"
+PORT_6008=$(netstat -tlnp 2>/dev/null | grep ":6008 " || ss -tlnp 2>/dev/null | grep ":6008 ")
+if [ -z "$PORT_6008" ]; then
+    check_item 0 "端口 6008 (后端) 空闲"
 else
-    echo -e "${YELLOW}⚠${NC} 端口 8000 已被占用"
-    echo "  $PORT_8000"
+    echo -e "${YELLOW}⚠${NC} 端口 6008 已被占用"
+    echo "  $PORT_6008"
 fi
 
 PORT_8001=$(netstat -tlnp 2>/dev/null | grep ":8001 " || ss -tlnp 2>/dev/null | grep ":8001 ")

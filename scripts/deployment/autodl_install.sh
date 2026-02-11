@@ -77,7 +77,7 @@ PIP_INDEX="https://pypi.tuna.tsinghua.edu.cn/simple"
 
 # 安装到 pytorch 环境
 conda activate pytorch
-echo "正在 pytorch 环境中安装 PyTorch 2.4.0..."
+echo "正在 pytorch 环境中安装 PyTorch 2.4.0 (用于后端+RAG多模态)..."
 pip install torch==2.4.0 torchvision==0.19.0 --index-url https://download.pytorch.org/whl/cu121 || \
 pip install torch==2.4.0 torchvision==0.19.0 -i $PIP_INDEX
 echo "✓ pytorch 环境的 PyTorch 安装完成"
@@ -97,11 +97,11 @@ echo "----------------------------------------------"
 conda activate pytorch
 cd "$PROJECT_DIR/backend"
 
-echo "安装 FastAPI 及其依赖 (包含Redis缓存)..."
+echo "安装后端依赖 (FastAPI + Redis + RAG多模态向量检索)..."
 pip install -r requirements.txt -i $PIP_INDEX
 
 echo "安装 Qwen-VL 相关库..."
-pip install transformers>=4.37.0 accelerate>=0.20.0 qwen-vl-utils einops timm -i $PIP_INDEX
+pip install accelerate>=0.20.0 qwen-vl-utils einops timm -i $PIP_INDEX
 
 echo "✓ 后端依赖安装完成"
 
@@ -120,6 +120,17 @@ echo ""
 echo "初始化数据库..."
 python init_db.py
 echo "✓ 数据库初始化完成"
+
+# 下载CLIP模型（RAG多模态向量检索需要）
+echo ""
+echo "下载CLIP图像模型 (用于RAG多模态检索)..."
+python download_clip.py
+if [ $? -eq 0 ]; then
+    echo "✓ CLIP模型下载完成"
+else
+    echo "⚠️  CLIP模型下载失败，将降级为纯文本向量检索"
+    echo "   可以稍后手动下载: cd backend && python download_clip.py"
+fi
 
 # ===== 5. 安装 VTON 服务依赖 =====
 echo ""
@@ -215,7 +226,7 @@ echo "=============================================="
 echo ""
 echo "📝 下一步操作:"
 echo "  1. 启动服务: cd /root/autodl-tmp/fashion-recommendation && bash start.sh"
-echo "  2. 访问前端: http://$(hostname -I | awk '{print $1}'):3000"
+echo "  2. 访问前端: http://$(hostname -I | awk '{print $1}'):6006"
 echo "  3. 查看日志: tail -f logs/*.log"
 echo ""
 echo "📦 已创建的 Conda 环境:"
@@ -223,18 +234,19 @@ echo "  - pytorch (后端)"
 echo "  - catvton (VTON服务)"
 echo ""
 echo "⚙️ 服务端口:"
-echo "  - Frontend: 3000"
-echo "  - Backend API: 8000"
+echo "  - Frontend: 6006"
+echo "  - Backend API: 6008"
 echo "  - VTON Server: 8001"
 echo ""
 echo "💡 提示:"
 echo "  - 首次上传图片时,Qwen3-VL 模型会自动下载 (~16GB)"
 echo "  - 首次使用 VTON 功能时,CatVTON 模型会自动下载 (~5GB)"
-echo "  - 预计总下载: ~25GB,请确保磁盘空间充足"
+echo "  - RAG多模态向量检索会下载 CLIP 模型 (~600MB)"
+echo "  - 预计总下载: ~26GB,请确保磁盘空间充足"
 echo "  - Redis缓存(可选): 会自动降级为内存缓存，不影响使用"
 echo ""
 echo "🔧 故障排查:"
 echo "  - 查看详细文档: cat AUTODL_SETUP.md"
-echo "  - 端口占用: netstat -tulnp | grep -E '3000|8000|8001'"
+echo "  - 端口占用: netstat -tulnp | grep -E '6006|6008|8001'"
 echo "  - GPU状态: nvidia-smi"
 echo ""

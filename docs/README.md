@@ -100,7 +100,6 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
 cd backend
 conda activate pytorch
 pip install -r requirements.txt
-python init_db.py
 
 # VTON 服务
 cd ../ml/CatVTON
@@ -123,7 +122,7 @@ bash start.sh
 cd ml && conda activate catvton && python vton_server.py
 
 # Terminal 2: Backend
-cd backend && conda activate pytorch && uvicorn app.main:app --host 0.0.0.0 --port 8000
+cd backend && conda activate pytorch && uvicorn app.main:app --host 0.0.0.0 --port 6008
 
 # Terminal 3: Frontend
 cd frontend && npm run dev
@@ -135,13 +134,13 @@ cd frontend && npm run dev
 
 启动成功后访问:
 
-- **前端界面**: `http://localhost:3000`
-- **后端 API**: `http://localhost:8000/docs`
-- **健康检查**: `http://localhost:8000/health`
+- **前端界面**: `http://localhost:6006`
+- **后端 API**: `http://localhost:6008/docs`
+- **健康检查**: `http://localhost:6008/health`
 
 AutoDL 实例访问:
 - 将 `localhost` 替换为你的实例 IP
-- 例: `http://123.45.67.89:3000`
+- 例: `http://123.45.67.89:6006`
 
 ---
 
@@ -149,8 +148,8 @@ AutoDL 实例访问:
 
 | 服务 | 端口 | 说明 |
 |------|------|------|
-| Frontend | 3000 | React 开发服务器 |
-| Backend API | 8000 | FastAPI + Qwen3-VL |
+| Frontend | 6006 | React 开发服务器 |
+| Backend API | 6008 | FastAPI + Qwen3-VL |
 | VTON Server | 8001 | CatVTON 虚拟试衣 |
 
 ---
@@ -182,7 +181,7 @@ tail -f logs/frontend.log
 
 ### 端口被占用
 ```bash
-netstat -tulnp | grep -E "3000|8000|8001"
+netstat -tulnp | grep -E "6006|6008|8001"
 kill -9 <PID>
 ```
 
@@ -199,7 +198,7 @@ cd ml && python download_model.py
 ```
 
 ### 前端无法连接后端
-1. 检查后端是否启动: `curl http://localhost:8000/health`
+1. 检查后端是否启动: `curl http://localhost:6008/health`
 2. 检查 `frontend/.env` 配置
 3. 检查防火墙/安全组设置
 
@@ -216,7 +215,7 @@ fashion-recommendation/
 │   │   ├── routes/      # API 路由
 │   │   ├── schemas/     # Pydantic 模式
 │   │   └── services/    # 业务逻辑
-│   └── init_db.py       # 数据库初始化
+│   └── requirements.txt
 ├── frontend/            # React 前端
 │   ├── src/
 │   │   ├── pages/       # 页面组件

@@ -46,13 +46,13 @@ def get_outfit_recommendations(
   
   # 核心特征1：温度描述（只保留最关键的）
   if avg_temp >= 28:
-    query_parts.append('hot')  # 炎热
+    query_parts.extend(['hot', 'lightweight', 'thin'])  # 高温特征
   elif avg_temp >= 20:
-    query_parts.append('warm')  # 温暖
+    query_parts.extend(['warm', 'comfortable', 'breathable'])  # 温暖特征
   elif avg_temp >= 10:
-    query_parts.append('cool')  # 凉爽
+    query_parts.extend(['cool', 'layered', 'moderate'])  # 凉爽特征
   else:
-    query_parts.append('cold')  # 寒冷
+    query_parts.extend(['cold', 'insulated', 'thick', 'warm'])  # 保暖特征
   
   # 核心特征2：天气状况（处理趋势并映射为英文）
   condition = weather.get('condition', 'clear')
@@ -100,11 +100,42 @@ def get_outfit_recommendations(
   if humidity > 75:
     query_parts.append('breathable')  # 高湿度
   
-  # 用户偏好
+  # 用户偏好（只保留通用属性，避免类别交叉污染）
   if occasion:
     query_parts.append(occasion)
+    # 只添加与场合相关的通用形容词，不添加具体类别
+    occasion_lower = occasion.lower()
+    if occasion_lower in ['business', 'formal', 'office']:
+      query_parts.extend(['formal', 'professional', 'elegant'])
+    elif occasion_lower in ['work', 'commute']:
+      query_parts.extend(['practical', 'professional', 'comfortable'])
+    elif occasion_lower in ['casual', 'daily', 'everyday']:
+      query_parts.extend(['comfortable', 'relaxed', 'simple'])
+    elif occasion_lower in ['home', 'indoor', 'leisure']:
+      query_parts.extend(['cozy', 'comfortable', 'relaxed', 'soft'])
+    elif occasion_lower in ['sport', 'gym', 'fitness', 'exercise']:
+      query_parts.extend(['athletic', 'functional', 'flexible'])
+    elif occasion_lower in ['party', 'celebration', 'nightclub']:
+      query_parts.extend(['stylish', 'fashionable', 'eye-catching'])
+    elif occasion_lower in ['date', 'romantic', 'dinner']:
+      query_parts.extend(['elegant', 'charming', 'refined'])
+    elif occasion_lower in ['travel', 'vacation', 'trip']:
+      query_parts.extend(['versatile', 'practical', 'easy-care'])
+    elif occasion_lower in ['outdoor', 'hiking', 'camping']:
+      query_parts.extend(['durable', 'functional', 'protective'])
+  
   if style:
     query_parts.append(style)
+  
+  # 色调偏好（保留抽象概念，避免过度限制）
+  if color_preference:
+    color_lower = color_preference.lower()
+    if color_lower in ['neutral', 'neutrals']:
+      query_parts.append('neutral-tone')
+    elif color_lower in ['warm', 'warm-tone', 'warm-tones']:
+      query_parts.append('warm-tone')
+    elif color_lower in ['cool', 'cool-tone', 'cool-tones']:
+      query_parts.append('cool-tone')
   
   query_text = " ".join(query_parts)
   
@@ -134,10 +165,12 @@ def get_outfit_recommendations(
         category_filter=category
       )
       if category_items:
+        print(f"🔍 [{category}] 检索到 {len(category_items)} 件: {category_items}")
         selected_items.extend(category_items)
     
     # 去重（不限制总数）
     relevant_item_ids = list(dict.fromkeys(selected_items))
+    print(f"✅ 向量检索总计: {len(relevant_item_ids)} 件衣物 (ID: {relevant_item_ids})")
     
     if not relevant_item_ids:
       # 降级方案：向量检索失败时使用全量查询

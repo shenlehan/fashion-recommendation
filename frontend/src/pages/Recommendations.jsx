@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getOutfitRecommendations, API_ORIGIN, virtualTryOn, fetchImageAsBlob, getUserProfile } from '../services/api';
 import './Recommendations.css';
 
@@ -121,6 +122,8 @@ const translateWeather = (condition) => {
 };
 
 function Recommendations({ user, isUploading }) {
+  const navigate = useNavigate();
+  
   // --- 从 localStorage 恢复状态 ---
   const getStoredState = (key, defaultValue) => {
     try {
@@ -299,7 +302,7 @@ function Recommendations({ user, isUploading }) {
             <p>{errorMsg}</p>
             <button 
               className="btn-secondary" 
-              onClick={() => window.location.href = '/profile'}
+              onClick={() => navigate('/profile')}
               style={{ marginTop: '1rem' }}
             >
               去填写个人资料

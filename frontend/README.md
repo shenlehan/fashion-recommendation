@@ -21,7 +21,7 @@
 ### 前置要求
 
 - 已安装 Node.js 16+
-- 后端服务运行在 `http://localhost:8000`
+- 后端服务运行在 `http://localhost:6008`
 
 ### 安装依赖
 
@@ -35,7 +35,7 @@ npm install
 npm run dev
 ```
 
-应用将在 `http://localhost:3000` 访问
+应用将在 `http://localhost:6006` 访问
 
 ### 生产构建
 
@@ -65,7 +65,7 @@ src/
 
 ## API 集成
 
-前端通过 `http://localhost:8000/api/v1` 连接后端 API。API 调用通过 `services/api.js` 模块处理。
+前端通过 `http://localhost:6008/api/v1` 连接后端 API。API 调用通过 `services/api.js` 模块处理。
 
 ### 可用的 API 函数
 
@@ -112,7 +112,7 @@ src/
 ## 注意事项
 
 - 认证较为基础（尚未使用 JWT token）
-- 图片由后端服务 `http://localhost:8000/uploads/`
+- 图片由后端服务 `http://localhost:6008/uploads/`
 - 用户会话通过 localStorage 持久化
 - 响应式设计，支持移动端和桌面端
 

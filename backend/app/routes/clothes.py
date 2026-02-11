@@ -17,13 +17,6 @@ def upload_clothing(
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-  print(f"\n{'='*60}")
-  print(f"收到上传请求")
-  print(f"user_id: {user_id}")
-  print(f"filename: {file.filename}")
-  print(f"content_type: {file.content_type}")
-  print(f"{'='*60}\n")
-  
   import os
   import uuid
   from pathlib import Path
@@ -39,14 +32,12 @@ def upload_clothing(
     file_path = os.path.join(upload_dir, unique_filename)
     if not os.path.exists(file_path):
       break
-    print(f"⚠️  文件名冲突（尝试 {attempt+1}/{max_attempts}），重新生成...")
+    pass  # 文件名冲突，重新生成
   else:
     raise HTTPException(status_code=500, detail="无法生成唯一文件名")
   
-  print(f"保存文件到: {file_path}")
   with open(file_path, "wb") as f:
     f.write(file.file.read())
-  print(f"✅ 文件保存成功")
 
   # Analyze image with Qwen model
   attributes = analyze_clothing_image(file_path)
@@ -74,9 +65,7 @@ def upload_clothing(
   db.commit()
   db.refresh(db_item)
   
-  print(f"✅ 数据库保存成功, item_id: {db_item.id}")
-  
-  # 生成并存储向量到ChromaDB
+  # 生成并存储向量到ChromaDB（多模态：文本+图像）
   try:
     embedding_service = get_embedding_service()
     embedding_service.add_item(db_item.id, {
@@ -87,10 +76,9 @@ def upload_clothing(
       "material_en": attributes.get("material_en", ""),
       "season": season,
       "category": attributes["category"]
-    })
-    print(f"✅ 向量生成成功")
+    }, image_path=file_path)  # 传入图像路径
   except Exception as e:
-    print(f"⚠️  向量生成失败（不影响上传）: {e}")
+    pass  # 向量生成失败不影响上传
   
   return {"message": "上传成功！", "item_id": db_item.id}
 
@@ -131,7 +119,6 @@ async def upload_clothing_batch_stream(
     
     try:
       message = json.dumps({'type': 'start', 'total': total, 'task_id': task_id})
-      print(f"[SSE] 发送start消息: {message}", flush=True)
       yield f"data: {message}\n\n"
       await asyncio.sleep(0)
       
@@ -200,9 +187,9 @@ async def upload_clothing_batch_stream(
               "material_en": attributes.get("material_en", ""),
               "season": season,
               "category": attributes["category"]
-            })
+            }, image_path=file_path)  # 传入图像路径
           except Exception as emb_err:
-            print(f"[SSE] 向量生成失败（不影响上传）: {emb_err}", flush=True)
+            pass  # 向量生成失败不影响上传
           
           success_count += 1
           success_item = {
@@ -216,7 +203,6 @@ async def upload_clothing_batch_stream(
           upload_manager.update_progress(task_id, idx, success_item=success_item)
           
           message = json.dumps({'type': 'progress', 'current': idx, 'total': total, 'status': 'success', 'filename': file.filename, 'name': item_name, 'item_id': db_item.id})
-          print(f"[SSE] 发送progress消息 [{idx}/{total}]: {file.filename}", flush=True)
           yield f"data: {message}\n\n"
           await asyncio.sleep(0)
           
@@ -239,13 +225,11 @@ async def upload_clothing_batch_stream(
               pass
           
           message = json.dumps({'type': 'progress', 'current': idx, 'total': total, 'status': 'failed', 'filename': file.filename, 'error': str(e)})
-          print(f"[SSE] 发送failed消息 [{idx}/{total}]: {file.filename}", flush=True)
           yield f"data: {message}\n\n"
           await asyncio.sleep(0)
       
       # 发送完成消息
       message = json.dumps({'type': 'complete', 'success': success_items, 'failed': failed_items, 'total': total, 'task_id': task_id})
-      print(f"[SSE] 发送complete消息: 成功{len(success_items)}/失败{len(failed_items)}", flush=True)
       yield f"data: {message}\n\n"
       await asyncio.sleep(0)
       
@@ -256,19 +240,16 @@ async def upload_clothing_batch_stream(
       # 客户端断开，标记任务取消
       upload_manager.cancel_task(task_id)
       # 客户端断开，立即回滚已上传的衣物
-      print(f"[SSE] 客户端断开连接（异常: {type(e).__name__}），回滚已上传的 {len(uploaded_ids)} 件衣物", flush=True)
       for item_id in uploaded_ids:
         try:
           item = db.query(WardrobeItem).filter(WardrobeItem.id == item_id).first()
           if item:
             if item.image_path and os.path.exists(item.image_path):
               os.remove(item.image_path)
-              print(f"[SSE] 删除文件: {item.image_path}", flush=True)
             db.delete(item)
             db.commit()
-            print(f"[SSE] 回滚删除 item_id={item_id}", flush=True)
         except Exception as del_err:
-          print(f"[SSE] 回滚删除失败 item_id={item_id}: {del_err}", flush=True)
+          pass  # 回滚删除失败
       raise
   
   return StreamingResponse(
@@ -288,12 +269,6 @@ def upload_clothing_batch(
     files: List[UploadFile] = File(...),
     db: Session = Depends(get_db)
 ):
-  print(f"\n{'='*60}")
-  print(f"收到批量上传请求")
-  print(f"user_id: {user_id}")
-  print(f"文件数量: {len(files)}")
-  print(f"{'='*60}\n")
-  
   import os
   import uuid
   from pathlib import Path
@@ -310,8 +285,6 @@ def upload_clothing_batch(
   for idx, file in enumerate(files, 1):
     file_path = None
     try:
-      print(f"\n[{idx}/{len(files)}] 处理文件: {file.filename}")
-      
       # 生成唯一文件名，保留原始扩展名，确保不冲突
       file_ext = Path(file.filename).suffix
       max_attempts = 10
@@ -326,10 +299,8 @@ def upload_clothing_batch(
       # 保存文件
       with open(file_path, "wb") as f:
         f.write(file.file.read())
-      print(f"✅ 文件保存成功: {file_path}")
       
       # AI分析
-      print(f"🤖 开始AI分析...")
       attributes = analyze_clothing_image(file_path)
       
       season = attributes["season"]
@@ -366,11 +337,10 @@ def upload_clothing_batch(
           "material_en": attributes.get("material_en", ""),
           "season": season,
           "category": attributes["category"]
-        })
+        }, image_path=file_path)  # 传入图像路径
       except Exception as emb_err:
-        print(f"⚠️  向量生成失败: {emb_err}")
+        pass  # 向量生成失败
       
-      print(f"✅ [{idx}/{len(files)}] 成功: {item_name} (ID: {db_item.id})")
       results["success"].append({
         "filename": file.filename,
         "name": item_name,
@@ -378,14 +348,10 @@ def upload_clothing_batch(
       })
       
     except Exception as e:
-      print(f"❌ [{idx}/{len(files)}] 失败: {file.filename}")
-      print(f"错误详情: {str(e)}")
-      
       # 删除已保存的文件
       if os.path.exists(file_path):
         try:
           os.remove(file_path)
-          print(f"🗑️  已清理失败文件: {file_path}")
         except:
           pass
       
@@ -393,12 +359,6 @@ def upload_clothing_batch(
         "filename": file.filename,
         "error": str(e)
       })
-  
-  print(f"\n{'='*60}")
-  print(f"批量上传完成")
-  print(f"成功: {len(results['success'])}/{results['total']}")
-  print(f"失败: {len(results['failed'])}/{results['total']}")
-  print(f"{'='*60}\n")
   
   return results
 
@@ -431,16 +391,9 @@ def get_upload_status(user_id: int):
 
 @router.delete("/{item_id}")
 def delete_clothing_item(item_id: int, db: Session = Depends(get_db)):
-  print(f"\n{'='*60}")
-  print(f"收到删除请求, item_id: {item_id}")
-  
   item = db.query(WardrobeItem).filter(WardrobeItem.id == item_id).first()
   if not item:
-    print(f"❌ 未找到 item_id={item_id} 的衣物")
-    print(f"{'='*60}\n")
     raise HTTPException(status_code=404, detail="未找到该衣物")
-
-  print(f"找到衣物: {item.name}, 图片路径: {item.image_path}")
   
   import os
   # 检查是否有其他记录引用同一个图片文件
@@ -451,40 +404,28 @@ def delete_clothing_item(item_id: int, db: Session = Depends(get_db)):
     ).count()
     
     if other_items_count > 0:
-      print(f"⚠️  警告: 还有 {other_items_count} 个其他衣物引用同一图片文件，跳过物理文件删除")
-      print(f"   图片路径: {item.image_path}")
+      pass  # 还有其他衣物引用同一图片，跳过物理文件删除
     elif os.path.exists(item.image_path):
       try:
         os.remove(item.image_path)
-        print(f"✅ 已删除图片文件: {item.image_path}")
       except Exception as e:
-        print(f"⚠️  删除图片文件失败: {e}")
-    else:
-      print(f"⚠️  图片文件不存在: {item.image_path}")
+        pass  # 删除图片文件失败
 
   db.delete(item)
   db.commit()
-  print(f"✅ 数据库记录删除成功")
   
   # 删除ChromaDB中的向量
   try:
     embedding_service = get_embedding_service()
     embedding_service.delete_item(item_id)
   except Exception as e:
-    print(f"⚠️  向量删除失败（不影响主流程）: {e}")
+    pass  # 向量删除失败不影响主流程
   
-  print(f"{'='*60}\n")
   return {"message": "删除成功"}
 
 
 @router.post("/delete-batch")
 def delete_clothing_batch(item_ids: List[int] = Body(...), db: Session = Depends(get_db)):
-  print(f"\n{'='*60}")
-  print(f"收到批量删除请求")
-  print(f"item_ids: {item_ids}")
-  print(f"数量: {len(item_ids)}")
-  print(f"{'='*60}\n")
-  
   import os
   results = {
     "success": [],
@@ -494,8 +435,6 @@ def delete_clothing_batch(item_ids: List[int] = Body(...), db: Session = Depends
   
   for idx, item_id in enumerate(item_ids, 1):
     try:
-      print(f"[{idx}/{len(item_ids)}] 删除 item_id: {item_id}")
-      
       item = db.query(WardrobeItem).filter(WardrobeItem.id == item_id).first()
       if not item:
         raise Exception(f"未找到 item_id={item_id} 的衣物")
@@ -508,13 +447,12 @@ def delete_clothing_batch(item_ids: List[int] = Body(...), db: Session = Depends
         ).count()
         
         if other_items_count > 0:
-          print(f"⚠️  警告: 还有 {other_items_count} 个其他衣物引用同一图片，跳过物理文件删除")
+          pass  # 还有其他衣物引用同一图片，跳过物理文件删除
         elif os.path.exists(item.image_path):
           try:
             os.remove(item.image_path)
-            print(f"✅ 已删除图片: {item.image_path}")
           except Exception as e:
-            print(f"⚠️  删除图片失败: {e}")
+            pass  # 删除图片失败
       
       # 删除数据库记录
       db.delete(item)
@@ -525,27 +463,17 @@ def delete_clothing_batch(item_ids: List[int] = Body(...), db: Session = Depends
         embedding_service = get_embedding_service()
         embedding_service.delete_item(item_id)
       except Exception as emb_err:
-        print(f"⚠️  向量删除失败: {emb_err}")
+        pass  # 向量删除失败
       
-      print(f"✅ [{idx}/{len(item_ids)}] 成功: {item.name} (ID: {item_id})")
       results["success"].append({
         "item_id": item_id,
         "name": item.name
       })
       
     except Exception as e:
-      print(f"❌ [{idx}/{len(item_ids)}] 失败: item_id={item_id}")
-      print(f"错误详情: {str(e)}")
-      
       results["failed"].append({
         "item_id": item_id,
         "error": str(e)
       })
-  
-  print(f"\n{'='*60}")
-  print(f"批量删除完成")
-  print(f"成功: {len(results['success'])}/{results['total']}")
-  print(f"失败: {len(results['failed'])}/{results['total']}")
-  print(f"{'='*60}\n")
   
   return results

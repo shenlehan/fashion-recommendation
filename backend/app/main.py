@@ -16,9 +16,7 @@ from app.models.user import User
 from app.models.wardrobe import WardrobeItem
 
 # --- 2. 数据库初始化 ---
-print("正在创建数据库...")
 Base.metadata.create_all(bind=engine)
-print("完成！")
 
 app = FastAPI(
   title="时尚推荐 API",
