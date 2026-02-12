@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from sqlalchemy.orm import Session
 from typing import Optional
 from app.core.database import get_db
 from app.services.weather_api import get_weather_by_city
-from app.services.recommendation_service import generate_outfit_recommendations
+from app.services.recommendation_service import generate_outfit_recommendations, adjust_outfit_with_conversation
 from app.services.embedding_service import get_embedding_service
+from app.services.conversation_manager import ConversationManager
 from app.models.user import User
 from app.models.wardrobe import WardrobeItem
 
@@ -165,12 +166,10 @@ def get_outfit_recommendations(
         category_filter=category
       )
       if category_items:
-        print(f"🔍 [{category}] 检索到 {len(category_items)} 件: {category_items}")
         selected_items.extend(category_items)
     
     # 去重（不限制总数）
     relevant_item_ids = list(dict.fromkeys(selected_items))
-    print(f"✅ 向量检索总计: {len(relevant_item_ids)} 件衣物 (ID: {relevant_item_ids})")
     
     if not relevant_item_ids:
       # 降级方案：向量检索失败时使用全量查询
@@ -213,6 +212,9 @@ def get_outfit_recommendations(
   if color_preference:
     preferences["color_preference"] = color_preference
 
+  # 创建新的对话会话
+  session_id = ConversationManager.create_session(db, user_id, preferences)
+  
   result = generate_outfit_recommendations(
     user_profile={
       "id": user.id,
@@ -226,9 +228,394 @@ def get_outfit_recommendations(
     weather=weather,
     preferences=preferences if preferences else None
   )
+  
+  # ⚠️ 修改：不自动保存推荐到会话历史，等用户选择后再保存
+  # 用户需要调用 /select-outfit 接口来选择某组推荐
 
   return {
+    "session_id": session_id,
     "weather": weather,
     "outfits": result.get("outfits", []),
     "missing_items": result.get("missing_items", [])
+  }
+
+
+@router.post("/select-outfit")
+def select_outfit(
+    payload: dict = Body(...),
+    db: Session = Depends(get_db)
+):
+  """用户选择某组推荐作为会话基础"""
+  session_id = payload.get("session_id")
+  outfit_index = payload.get("outfit_index")  # 推荐组索引（0-based）
+  outfit_data = payload.get("outfit_data")  # 推荐组数据（items + description）
+  user_id = payload.get("user_id")
+  
+  if not session_id or outfit_index is None or not outfit_data:
+    raise HTTPException(status_code=400, detail="缺少必要参数")
+  
+  # 验证会话存在
+  session = ConversationManager.get_session(db, session_id)
+  if not session:
+    raise HTTPException(status_code=404, detail="会话不存在")
+  
+  # 验证用户权限
+  if session.user_id != user_id:
+    raise HTTPException(status_code=403, detail="无权操作此会话")
+  
+  # 提取衣物ID
+  outfit_ids = [item["id"] for item in outfit_data.get("items", [])]
+  description = outfit_data.get("description", f"选择了方案{outfit_index + 1}")
+  
+  # 保存到会话历史
+  ConversationManager.add_message(
+    db, session_id, "assistant",
+    f"方案{outfit_index + 1}：{description}",
+    outfit_ids
+  )
+  
+  # 更新当前穿搭
+  ConversationManager.update_current_outfit(db, session_id, outfit_ids)
+  
+  # 获取更新后的会话历史和衣物映射
+  updated_session = ConversationManager.get_session(db, session_id)
+  all_item_ids = set()
+  for msg in updated_session.conversation_history or []:
+    if "outfit_ids" in msg:
+      all_item_ids.update(msg["outfit_ids"])
+  
+  # 查询衣物详情
+  items_map = {}
+  if all_item_ids:
+    items = db.query(WardrobeItem).filter(WardrobeItem.id.in_(all_item_ids)).all()
+    for item in items:
+      items_map[item.id] = {
+        "id": item.id,
+        "name": item.name,
+        "category": item.category,
+        "color": item.color,
+        "image_path": item.image_path
+      }
+  
+  return {
+    "success": True,
+    "message": f"已选择方案{outfit_index + 1}作为会话基础",
+    "conversation_history": updated_session.conversation_history,
+    "items_map": items_map
+  }
+
+
+@router.post("/adjust")
+def adjust_outfit(
+    payload: dict = Body(...),
+    db: Session = Depends(get_db)
+):
+  """根据用户反馈调整穿搭方案（多轮对话）"""
+  session_id = payload.get("session_id")
+  adjustment_request = payload.get("adjustment_request")
+  user_id = payload.get("user_id")
+  
+  if not session_id or not adjustment_request:
+    raise HTTPException(status_code=400, detail="缺少session_id或adjustment_request")
+  
+  # 验证会话存在
+  session = ConversationManager.get_session(db, session_id)
+  if not session:
+    raise HTTPException(status_code=404, detail="会话不存在")
+  
+  # 验证用户权限
+  if session.user_id != user_id:
+    raise HTTPException(status_code=403, detail="无权操作此会话")
+  
+  # 检查会话是否过期（3天）
+  from datetime import datetime, timedelta
+  if datetime.now() - session.updated_at > timedelta(days=3):
+    # 删除过期会话
+    ConversationManager.delete_session(db, session_id)
+    raise HTTPException(status_code=410, detail="会话已过期（3天未活跃），请重新生成推荐")
+  
+  # 记录用户调整请求
+  ConversationManager.add_message(db, session_id, "user", adjustment_request)
+  
+  # 获取用户和衣物数据
+  user = db.query(User).filter(User.id == user_id).first()
+  if not user:
+    raise HTTPException(status_code=404, detail="用户不存在")
+  
+  # 获取天气信息
+  city = user.city or "北京"
+  weather = get_weather_by_city(city)
+  
+  # 向量检索相关衣物
+  try:
+    embedding_service = get_embedding_service()
+    
+    # 构建检索查询（结合调整请求和天气）
+    query_parts = [adjustment_request]
+    
+    temp_max = weather.get('temp_max', 25)
+    temp_min = weather.get('temp_min', 15)
+    avg_temp = (temp_max + temp_min) // 2
+    
+    if avg_temp >= 28:
+      query_parts.extend(['hot', 'lightweight'])
+    elif avg_temp >= 20:
+      query_parts.append('warm')
+    elif avg_temp >= 10:
+      query_parts.append('cool')
+    else:
+      query_parts.extend(['cold', 'warm'])
+    
+    query_text = " ".join(query_parts)
+    
+    categories = [
+      'inner_top', 'mid_top', 'outer_top', 'bottom',
+      'full_body', 'shoes', 'accessories'
+    ]
+    selected_items = []
+    
+    for category in categories:
+      category_items = embedding_service.search_similar_items(
+        query_text=query_text,
+        user_id=user_id,
+        top_k=3,
+        category_filter=category
+      )
+      if category_items:
+        selected_items.extend(category_items)
+    
+    relevant_item_ids = list(dict.fromkeys(selected_items))
+    
+    if not relevant_item_ids:
+      wardrobe = db.query(WardrobeItem).filter(WardrobeItem.user_id == user_id).all()
+    else:
+      wardrobe = db.query(WardrobeItem).filter(
+        WardrobeItem.id.in_(relevant_item_ids)
+      ).all()
+      id_to_item = {item.id: item for item in wardrobe}
+      wardrobe = [id_to_item[item_id] for item_id in relevant_item_ids if item_id in id_to_item]
+  
+  except Exception as e:
+    wardrobe = db.query(WardrobeItem).filter(WardrobeItem.user_id == user_id).all()
+  
+  # 构建衣物列表
+  wardrobe_list = [
+    {
+      "id": item.id,
+      "name": item.name,
+      "name_en": item.name_en,
+      "category": item.category,
+      "color": item.color,
+      "color_en": item.color_en,
+      "season": item.season,
+      "material": item.material,
+      "material_en": item.material_en,
+      "image_path": item.image_path
+    }
+    for item in wardrobe
+  ]
+  
+  # 调用AI调整服务
+  result = adjust_outfit_with_conversation(
+    session_id=session_id,
+    adjustment_request=adjustment_request,
+    user_profile={
+      "id": user.id,
+      "gender": user.gender,
+      "age": user.age,
+      "height": user.height,
+      "weight": user.weight,
+      "city": user.city
+    },
+    wardrobe_items=wardrobe_list,
+    weather=weather,
+    preferences=session.preferences,
+    conversation_history=session.conversation_history,
+    current_outfit=session.current_outfit,
+    db=db
+  )
+  
+  # 保存调整结果
+  if result.get("outfits") and len(result["outfits"]) > 0:
+    first_outfit = result["outfits"][0]
+    outfit_ids = [item["id"] for item in first_outfit.get("items", [])]
+    
+    ConversationManager.add_message(
+      db, session_id, "assistant",
+      first_outfit.get("description", "调整了推荐方案"),
+      outfit_ids
+    )
+    ConversationManager.update_current_outfit(db, session_id, outfit_ids)
+  
+  # 获取更新后的会话历史和衣物映射
+  updated_session = ConversationManager.get_session(db, session_id)
+  all_item_ids = set()
+  for msg in updated_session.conversation_history or []:
+    if "outfit_ids" in msg:
+      all_item_ids.update(msg["outfit_ids"])
+  
+  # 批量查询衣物信息
+  items_map = {}
+  if all_item_ids:
+    items = db.query(WardrobeItem).filter(WardrobeItem.id.in_(all_item_ids)).all()
+    items_map = {
+      item.id: {
+        "id": item.id,
+        "name": item.name,
+        "category": item.category,
+        "color": item.color,
+        "image_path": item.image_path
+      }
+      for item in items
+    }
+  
+  return {
+    "session_id": session_id,
+    "outfits": result.get("outfits", []),
+    "conversation_history": updated_session.conversation_history,
+    "items_map": items_map
+  }
+
+
+@router.get("/sessions")
+def get_user_sessions(
+    user_id: int = Query(...),
+    limit: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db)
+):
+  """获取用户的会话列表（自动过滤过期会话）"""
+  from datetime import datetime, timedelta
+  
+  sessions = ConversationManager.get_user_sessions(db, user_id, limit)
+  
+  # 过滤3天前的会话不显示
+  cutoff_date = datetime.now() - timedelta(days=3)
+  active_sessions = [s for s in sessions if s.updated_at >= cutoff_date]
+  
+  return {
+    "sessions": [
+      {
+        "session_id": session.session_id,
+        "created_at": session.created_at.isoformat(),
+        "updated_at": session.updated_at.isoformat(),
+        "preferences": session.preferences,
+        "message_count": len(session.conversation_history or []),
+        "preview": (session.conversation_history[0].get("content", "") 
+                   if session.conversation_history and len(session.conversation_history) > 0 
+                   else "新会话")
+      }
+      for session in active_sessions
+    ]
+  }
+
+
+@router.get("/sessions/{session_id}")
+def get_session_detail(
+    session_id: str,
+    user_id: int = Query(...),
+    db: Session = Depends(get_db)
+):
+  """获取会话详情和完整历史"""
+  session = ConversationManager.get_session(db, session_id)
+  if not session:
+    raise HTTPException(status_code=404, detail="会话不存在")
+  
+  if session.user_id != user_id:
+    raise HTTPException(status_code=403, detail="无权访问此会话")
+  
+  # 获取对话中涉及的所有衣物ID
+  all_item_ids = set()
+  for msg in session.conversation_history or []:
+    if "outfit_ids" in msg:
+      all_item_ids.update(msg["outfit_ids"])
+  
+  # 批量查询衣物信息
+  items_map = {}
+  if all_item_ids:
+    items = db.query(WardrobeItem).filter(WardrobeItem.id.in_(all_item_ids)).all()
+    items_map = {
+      item.id: {
+        "id": item.id,
+        "name": item.name,
+        "category": item.category,
+        "color": item.color,
+        "image_path": item.image_path
+      }
+      for item in items
+    }
+  
+  return {
+    "session_id": session.session_id,
+    "created_at": session.created_at.isoformat(),
+    "updated_at": session.updated_at.isoformat(),
+    "preferences": session.preferences,
+    "conversation_history": session.conversation_history,
+    "current_outfit": session.current_outfit,
+    "items_map": items_map
+  }
+
+
+@router.delete("/sessions/{session_id}/messages/{message_index}")
+def delete_conversation_message(
+    session_id: str,
+    message_index: int,
+    user_id: int = Query(...),
+    db: Session = Depends(get_db)
+):
+  """删除对话中的特定消息"""
+  # 验证会话存在且属于该用户
+  session = ConversationManager.get_session(db, session_id)
+  if not session:
+    raise HTTPException(status_code=404, detail="会话不存在")
+  
+  if session.user_id != user_id:
+    raise HTTPException(status_code=403, detail="无权操作此会话")
+  
+  try:
+    ConversationManager.delete_message(db, session_id, message_index)
+    return {
+      "success": True,
+      "message": "消息已删除",
+      "remaining_count": len(session.conversation_history or []) - 1
+    }
+  except ValueError as e:
+    raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.delete("/sessions/{session_id}")
+def delete_session(
+    session_id: str,
+    user_id: int = Query(...),
+    db: Session = Depends(get_db)
+):
+  """删除整个会话"""
+  # 验证会话存在且属于该用户
+  session = ConversationManager.get_session(db, session_id)
+  if not session:
+    raise HTTPException(status_code=404, detail="会话不存在")
+  
+  if session.user_id != user_id:
+    raise HTTPException(status_code=403, detail="无权删除此会话")
+  
+  # 删除会话
+  ConversationManager.delete_session(db, session_id)
+  
+  return {
+    "success": True,
+    "message": "会话已删除"
+  }
+
+
+@router.delete("/sessions")
+def delete_all_sessions(
+    user_id: int = Query(...),
+    db: Session = Depends(get_db)
+):
+  """清空用户的所有会话"""
+  count = ConversationManager.delete_all_user_sessions(db, user_id)
+  
+  return {
+    "success": True,
+    "message": f"已清空 {count} 个会话",
+    "deleted_count": count
   }

@@ -9,10 +9,10 @@ echo ""
 
 # --- 1. 环境检查与旧服务清理 ---
 echo "正在检查现有服务..."
-# 清理 8001 (VTON), 8000 (Backend), 3000 (Frontend)
+# 清理 8001 (VTON), 6008 (Backend), 6006 (Frontend)
 pkill -f "vton_server.py" 2>/dev/null && echo "  已停止旧 VTON 服务器 (8001)" || true
-pkill -f "uvicorn app.main:app" 2>/dev/null && echo "  已停止旧后端服务 (8000)" || true
-pkill -f "node.*vite" 2>/dev/null && echo "  已停止旧前端服务 (3000)" || true
+pkill -f "uvicorn app.main:app" 2>/dev/null && echo "  已停止旧后端服务 (6008)" || true
+pkill -f "node.*vite" 2>/dev/null && echo "  已停止旧前端服务 (6006)" || true
 sleep 2
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"

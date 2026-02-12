@@ -97,6 +97,52 @@ export const getOutfitRecommendations = async (userId, preferences = {}) => {
   return response.data;
 };
 
+// --- 多轮对话调整穿搭 ---
+export const adjustOutfit = async (sessionId, adjustmentRequest, userId) => {
+  const response = await api.post('/recommend/adjust', {
+    session_id: sessionId,
+    adjustment_request: adjustmentRequest,
+    user_id: userId
+  });
+  return response.data;
+};
+
+export const selectOutfit = async (sessionId, outfitIndex, outfitData, userId) => {
+  const response = await api.post('/recommend/select-outfit', {
+    session_id: sessionId,
+    outfit_index: outfitIndex,
+    outfit_data: outfitData,
+    user_id: userId
+  });
+  return response.data;
+};
+
+// --- 会话管理 ---
+export const getUserSessions = async (userId, limit = 10) => {
+  const response = await api.get(`/recommend/sessions?user_id=${userId}&limit=${limit}`);
+  return response.data;
+};
+
+export const getSessionDetail = async (sessionId, userId) => {
+  const response = await api.get(`/recommend/sessions/${sessionId}?user_id=${userId}`);
+  return response.data;
+};
+
+export const deleteConversationMessage = async (sessionId, messageIndex, userId) => {
+  const response = await api.delete(`/recommend/sessions/${sessionId}/messages/${messageIndex}?user_id=${userId}`);
+  return response.data;
+};
+
+export const deleteSession = async (sessionId, userId) => {
+  const response = await api.delete(`/recommend/sessions/${sessionId}?user_id=${userId}`);
+  return response.data;
+};
+
+export const deleteAllSessions = async (userId) => {
+  const response = await api.delete(`/recommend/sessions?user_id=${userId}`);
+  return response.data;
+};
+
 // --- 虚拟试衣核心逻辑 (CatVTON) ---
 
 /**

@@ -422,6 +422,291 @@ JSON:
         "missing_items": []
       }
 
+  def adjust_outfit_with_conversation(
+      self,
+      adjustment_request: str,
+      wardrobe_items: List[Dict[str, Any]],
+      weather: Dict[str, Any],
+      user_profile: Dict[str, Any],
+      preferences: Optional[Dict[str, Any]],
+      conversation_history: List[Dict[str, Any]],
+      current_outfit: List[int]
+  ) -> Dict[str, Any]:
+    """根据对话历史调整穿搭方案"""
+    # 按类别分组衣物
+    categorized = {}
+    for item in wardrobe_items:
+      category = item.get('category', 'unknown')
+      if category not in categorized:
+        categorized[category] = []
+      categorized[category].append(item)
+    
+    # 构建分类展示的衣物列表
+    wardrobe_sections = []
+    item_counter = 0
+    
+    category_order = [
+      ('inner_top', 'INNER LAYER'),
+      ('mid_top', 'MID LAYER'),
+      ('outer_top', 'OUTER LAYER'),
+      ('bottom', 'BOTTOM'),
+      ('full_body', 'FULL BODY'),
+      ('shoes', 'SHOES'),
+      ('socks', 'SOCKS'),
+      ('accessories', 'ACCESSORIES'),
+      ('underwear', 'UNDERWEAR')
+    ]
+    
+    for category_key, category_label in category_order:
+      items = categorized.get(category_key, [])
+      if items:
+        items_text = []
+        for item in items:
+          item_counter += 1
+          items_text.append(
+            f"{item_counter}. {item.get('name_en', 'Unknown')} "
+            f"({item.get('color_en', 'unknown')}, {item.get('material_en', 'unknown')})"
+          )
+        wardrobe_sections.append(f"{category_label}:\n" + "\n".join(items_text))
+    
+    wardrobe_text = "\n\n".join(wardrobe_sections)
+
+    # 构建天气信息
+    temp_max = weather.get('temp_max', 'N/A')
+    temp_min = weather.get('temp_min', 'N/A')
+    condition = weather.get('condition', 'N/A')
+    humidity = weather.get('humidity', 'N/A')
+    wind_speed = weather.get('wind_speed', 'N/A')
+    rain_prob = weather.get('rain_prob', 0)
+    
+    weather_parts = [f"Temperature: {temp_min}~{temp_max}°C"]
+    weather_parts.append(f"Condition: {condition}")
+    
+    if humidity != 'N/A':
+      weather_parts.append(f"Humidity: {humidity}%")
+    if wind_speed != 'N/A':
+      weather_parts.append(f"Wind: {wind_speed}m/s")
+    if rain_prob > 0:
+      weather_parts.append(f"Rain probability: {rain_prob}%")
+    
+    weather_text = ", ".join(weather_parts)
+
+    # 生成用户信息
+    user_parts = []
+    if user_profile.get('gender'):
+      gender_map = {'male': 'Male', 'female': 'Female', 'other': 'Other'}
+      user_parts.append(f"Gender: {gender_map.get(user_profile['gender'], user_profile['gender'])}")
+    if user_profile.get('age'):
+      user_parts.append(f"Age: {user_profile['age']}")
+    if user_profile.get('height') and user_profile.get('weight'):
+      height = user_profile['height']
+      weight = user_profile['weight']
+      bmi = weight / ((height / 100) ** 2)
+      user_parts.append(f"Height: {height}cm, Weight: {weight}kg, BMI: {bmi:.1f}")
+    if user_profile.get('city'):
+      user_parts.append(f"Location: {user_profile['city']}")
+    
+    user_text = ", ".join(user_parts) if user_parts else "No user profile available"
+
+    # 构建用户偏好信息
+    pref_text = ""
+    if preferences:
+      pref_parts = []
+      if preferences.get('occasion'):
+        pref_parts.append(f"Occasion: {preferences['occasion']}")
+      if preferences.get('style'):
+        pref_parts.append(f"Style: {preferences['style']}")
+      if preferences.get('color_preference'):
+        pref_parts.append(f"Color tone: {preferences['color_preference']}")
+      if pref_parts:
+        pref_text = "\nUSER PREFERENCES: " + ", ".join(pref_parts)
+
+    # 构建当前穿搭信息
+    current_outfit_items = []
+    for item_id in current_outfit:
+      for item in wardrobe_items:
+        if item.get('id') == item_id:
+          current_outfit_items.append(item)
+          break
+    
+    if current_outfit_items:
+      current_outfit_text = "CURRENT OUTFIT:\n" + "\n".join([
+        f"- {item.get('name_en', 'Unknown')} ({item.get('color_en', 'unknown')}, {item.get('material_en', 'unknown')})"
+        for item in current_outfit_items
+      ])
+    else:
+      current_outfit_text = "CURRENT OUTFIT: None"
+
+    # 构建对话历史文本
+    conversation_text = ""
+    if conversation_history:
+      history_lines = []
+      for msg in conversation_history[-5:]:  # 只保留最近5轮
+        role = msg.get('role', 'unknown')
+        content = msg.get('content', '')
+        if role == 'user':
+          history_lines.append(f"User: {content}")
+        elif role == 'assistant':
+          history_lines.append(f"Assistant: {content}")
+      
+      if history_lines:
+        conversation_text = "\n\nCONVERSATION HISTORY:\n" + "\n".join(history_lines)
+
+    prompt = f"""Adjust the outfit recommendation based on user feedback:
+
+USER: {user_text}{pref_text}
+WEATHER: {weather_text}
+{current_outfit_text}
+WARDROBE:
+{wardrobe_text}{conversation_text}
+
+USER REQUEST (translate to English if needed): {adjustment_request}
+
+CRITICAL RULES:
+1. PRESERVATION PRIORITY:
+   - If user only mentions changing ONE category, KEEP ALL OTHER categories unchanged
+   - If user says change the jacket, keep bottom, shoes, and accessories from current outfit
+   - If user says change dress to pants, replace ONLY the dress/full_body, keep shoes and accessories
+   - NEVER remove shoes unless explicitly requested
+
+2. MANDATORY CATEGORIES (must include in final outfit):
+   - BOTTOM or FULL_BODY: Exactly one (required)
+   - SHOES: Exactly one (ALWAYS required unless user says remove shoes)
+   - TOPS: At least one if not using full_body
+
+3. EXAMPLE:
+   Current: [T-shirt(1), Dress(10), Sneakers(15)]
+   Request: Change dress to pants
+   Result: [T-shirt(1), Jeans(12), Sneakers(15)] - Shoes preserved
+
+4. Return 1-2 adjusted outfits
+5. Description MUST be in Chinese
+
+JSON:
+{{
+  "outfits": [
+    {{
+      "items": [1, 3, 5, 8],
+      "description": "<Chinese description explaining what changed and why>"
+    }}
+  ],
+  "missing_items": []
+}}"""
+
+    messages = [
+      {
+        "role": "user",
+        "content": [{"type": "text", "text": prompt}]
+      }
+    ]
+
+    text = self.processor.apply_chat_template(
+      messages, tokenize=False, add_generation_prompt=True
+    )
+    inputs = self.processor(
+      text=[text],
+      padding=True,
+      return_tensors="pt",
+    )
+    inputs = inputs.to(self.device)
+
+    with torch.no_grad():
+      generated_ids = self.model.generate(
+        **inputs,
+        max_new_tokens=1024,
+        temperature=0.8,
+        top_p=0.9,
+        do_sample=True,
+        pad_token_id=self.processor.tokenizer.pad_token_id,
+      )
+
+    generated_ids_trimmed = [
+      out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
+    ]
+    output_text = self.processor.batch_decode(
+      generated_ids_trimmed,
+      skip_special_tokens=True,
+      clean_up_tokenization_spaces=False
+    )[0]
+
+    try:
+      output_text = output_text.strip()
+      if output_text.startswith("```json"):
+        output_text = output_text[7:]
+      if output_text.startswith("```"):
+        output_text = output_text[3:]
+      if output_text.endswith("```"):
+        output_text = output_text[:-3]
+
+      result = json.loads(output_text.strip())
+
+      outfits_with_items = []
+      for outfit in result.get("outfits", []):
+        item_indices = outfit.get("items", [])
+        outfit_items = []
+        for idx in item_indices:
+          if isinstance(idx, int) and 1 <= idx <= len(wardrobe_items):
+            outfit_items.append(wardrobe_items[idx - 1])
+        
+        # ✅ 关键修复：验证并修复缺失的必需品类
+        outfit_items = self._ensure_required_categories(
+          outfit_items, current_outfit, wardrobe_items
+        )
+
+        outfits_with_items.append({
+          "items": outfit_items,
+          "description": outfit.get("description", "")
+        })
+
+      return {
+        "outfits": outfits_with_items,
+        "missing_items": result.get("missing_items", [])
+      }
+
+    except json.JSONDecodeError:
+      print(f"Failed to parse adjustment JSON: {output_text}")
+      return {
+        "outfits": [],
+        "missing_items": []
+      }
+
+  def _ensure_required_categories(
+      self,
+      outfit_items: List[Dict[str, Any]],
+      current_outfit_ids: List[int],
+      wardrobe_items: List[Dict[str, Any]]
+  ) -> List[Dict[str, Any]]:
+    """确保调整后的方案包含必需品类（特别是鞋子）"""
+    # 统计当前方案的类别
+    categories_present = set(item.get('category') for item in outfit_items)
+    
+    # 检查是否缺少鞋子
+    has_shoes = 'shoes' in categories_present
+    has_bottom = 'bottom' in categories_present or 'full_body' in categories_present
+    
+    # 如果缺少关键品类，从原方案中补回
+    if not has_shoes or not has_bottom:
+      # 构建原方案的衣物字典
+      current_items_map = {}
+      for item_id in current_outfit_ids:
+        for item in wardrobe_items:
+          if item.get('id') == item_id:
+            current_items_map[item.get('category')] = item
+            break
+      
+      # 补回缺失的鞋子
+      if not has_shoes and 'shoes' in current_items_map:
+        outfit_items.append(current_items_map['shoes'])
+      
+      # 补回缺失的下装（如果原方案有）
+      if not has_bottom:
+        if 'bottom' in current_items_map:
+          outfit_items.append(current_items_map['bottom'])
+        elif 'full_body' in current_items_map:
+          outfit_items.append(current_items_map['full_body'])
+    
+    return outfit_items
+
 
 # Thread-safe singleton pattern
 _model_instance: Optional[FashionQwenModel] = None
@@ -476,3 +761,26 @@ def get_recommendations(
 ) -> Dict[str, Any]:
   model = get_model()
   return model.generate_outfit_recommendation(wardrobe, weather, user, preferences)
+
+
+def adjust_recommendations_with_conversation(
+    session_id: str,
+    adjustment_request: str,
+    user: Dict[str, Any],
+    wardrobe: List[Dict[str, Any]],
+    weather: Dict[str, Any],
+    preferences: Optional[Dict[str, Any]],
+    conversation_history: List[Dict[str, Any]],
+    current_outfit: List[int]
+) -> Dict[str, Any]:
+  """基于对话历史调整穿搭方案"""
+  model = get_model()
+  return model.adjust_outfit_with_conversation(
+    adjustment_request=adjustment_request,
+    wardrobe_items=wardrobe,
+    weather=weather,
+    user_profile=user,
+    preferences=preferences,
+    conversation_history=conversation_history,
+    current_outfit=current_outfit
+  )

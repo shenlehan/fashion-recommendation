@@ -37,22 +37,6 @@
   border-radius: 8px;
 }
 
-.btn-secondary {
-  padding: 12px 24px;
-  background: #6c757d;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn-secondary:hover {
-  background: #5a6268;
-  transform: translateY(-2px);
-}
-
 .btn-select-all {
   padding: 12px 24px;
   background: #17a2b8;

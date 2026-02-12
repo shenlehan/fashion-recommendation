@@ -59,9 +59,11 @@ uvicorn app.main:app --host 0.0.0.0 --port 6008 --reload
 ### 推荐检索流程
 
 ```
-用户请求推荐
+用户请求推荐（初始/多轮调整）
     ↓
 构建查询文本（智能增强）：
+  • 初始推荐：温度+天气+场合+风格+色调
+  • 多轮调整：调整请求("换外套")+温度+用户偏好
   • 温度特征：hot/warm/cool/cold + lightweight/breathable/layered/thick
   • 天气映射：中英文转换（晴→sunny, 多云→cloudy）
   • 特殊需求：降水>50%→waterproof, 湿度>75%→breathable
@@ -92,7 +94,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 6008 --reload
     ↓
 从数据库批量查询完整信息
     ↓
-传给Qwen3-VL生成搭配推荐
+传给Qwen3-VL生成搭配推荐（初始）或调整方案（多轮）
 ```
 
 ### 以图搜图流程
