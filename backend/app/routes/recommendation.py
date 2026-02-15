@@ -265,12 +265,12 @@ def select_outfit(
   
   # 提取衣物ID
   outfit_ids = [item["id"] for item in outfit_data.get("items", [])]
-  description = outfit_data.get("description", f"选择了方案{outfit_index + 1}")
+  description = outfit_data.get("description", "已选择推荐方案")
   
   # 保存到会话历史
   ConversationManager.add_message(
     db, session_id, "assistant",
-    f"方案{outfit_index + 1}：{description}",
+    description,
     outfit_ids
   )
   
@@ -299,7 +299,7 @@ def select_outfit(
   
   return {
     "success": True,
-    "message": f"已选择方案{outfit_index + 1}作为会话基础",
+    "message": "已选择推荐方案作为会话基础",
     "conversation_history": updated_session.conversation_history,
     "items_map": items_map
   }
@@ -449,6 +449,7 @@ def adjust_outfit(
   
   # 获取更新后的会话历史和衣物映射
   updated_session = ConversationManager.get_session(db, session_id)
+  
   all_item_ids = set()
   for msg in updated_session.conversation_history or []:
     if "outfit_ids" in msg:
@@ -480,17 +481,18 @@ def adjust_outfit(
 @router.get("/sessions")
 def get_user_sessions(
     user_id: int = Query(...),
-    limit: int = Query(10, ge=1, le=50),
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     db: Session = Depends(get_db)
 ):
   """获取用户的会话列表（自动过滤过期会话）"""
   from datetime import datetime, timedelta
   
-  sessions = ConversationManager.get_user_sessions(db, user_id, limit)
+  sessions = ConversationManager.get_user_sessions(db, user_id, limit, offset)
   
-  # 过滤3天前的会话不显示
+  # 过滤3天前的会话不显示（处理updated_at为None的情况）
   cutoff_date = datetime.now() - timedelta(days=3)
-  active_sessions = [s for s in sessions if s.updated_at >= cutoff_date]
+  active_sessions = [s for s in sessions if s.updated_at and s.updated_at >= cutoff_date]
   
   return {
     "sessions": [
@@ -505,7 +507,8 @@ def get_user_sessions(
                    else "新会话")
       }
       for session in active_sessions
-    ]
+    ],
+    "has_more": len(sessions) == limit  # 如果返回数量等于limit，说明可能还有更多
   }
 
 

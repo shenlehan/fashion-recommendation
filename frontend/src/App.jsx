@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Wardrobe from './pages/Wardrobe';
 import Recommendations from './pages/Recommendations';
+import Conversation from './pages/Conversation';
 import Profile from './pages/Profile';
 import './App.css'
 
@@ -52,6 +53,7 @@ function App() {
             <div className="nav-links">
               <Link to="/wardrobe">我的衣橱</Link>
               <Link to="/recommendations">获取推荐</Link>
+              <Link to="/conversation">对话调整</Link>
               <Link to="/profile">个人资料</Link>
               <span className="user-info">你好，{user.username}！</span>
               <button onClick={handleLogout} className="btn-logout">退出</button>
@@ -99,6 +101,10 @@ function App() {
           <Route
             path="/recommendations"
             element={user ? <Recommendations user={user} isUploading={globalUpload.uploading} /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/conversation"
+            element={user ? <Conversation user={user} isUploading={globalUpload.uploading} /> : <Navigate to="/login" />}
           />
           <Route
             path="/profile"

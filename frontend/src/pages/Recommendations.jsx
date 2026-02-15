@@ -1,8 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { getOutfitRecommendations, adjustOutfit, selectOutfit, getUserSessions, getSessionDetail, deleteConversationMessage, deleteSession, deleteAllSessions, API_ORIGIN, virtualTryOn, fetchImageAsBlob, getUserProfile } from '../services/api';
+import { getOutfitRecommendations, selectOutfit, API_ORIGIN, virtualTryOn, fetchImageAsBlob, getUserProfile } from '../services/api';
 import './Recommendations.css';
+
+// ===== 常量定义 =====
+const TIMING = {
+  ERROR_AUTO_DISMISS: 5000,      // 错误消息自动消失时间(ms)
+  SUCCESS_MESSAGE: 3000,          // 成功消息显示时间(ms)
+  STATE_CLEANUP_DELAY: 100        // 状态清理延迟时间(ms)
+};
 
 // ===== 中英文映射字典 =====
 const CATEGORY_MAP = {
@@ -125,6 +132,9 @@ const translateWeather = (condition) => {
 function Recommendations({ user, isUploading }) {
   const navigate = useNavigate();
   
+  // 成功消息定时器
+  const successMessageTimerRef = useRef(null);
+  
   // --- 从 localStorage 恢复状态 ---
   const getStoredState = (key, defaultValue) => {
     try {
@@ -135,11 +145,11 @@ function Recommendations({ user, isUploading }) {
     }
   };
 
-  // --- 原有状态（添加持久化） ---
+  // 原有状态
   const [recommendations, setRecommendations] = useState(() => getStoredState('recommendations', null));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const errorTimerRef = useRef(null); // 错误提示定时器
+  const errorTimerRef = useRef(null);
   const [preferences, setPreferences] = useState(() => getStoredState('preferences', {
     occasion: '',
     style: '',
@@ -147,32 +157,28 @@ function Recommendations({ user, isUploading }) {
     custom_request: ''
   }));
   const [showPreferences, setShowPreferences] = useState(false);
-  const [savedPreferences, setSavedPreferences] = useState(() => getStoredState('savedPreferences', null)); // 暂存的要求
+  const [savedPreferences, setSavedPreferences] = useState(() => getStoredState('savedPreferences', null));
+  const [sessionId, setSessionId] = useState(() => {
+    try {
+      const stored = localStorage.getItem(`shared_${user.id}_sessionId`);
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [selectedOutfitIndex, setSelectedOutfitIndex] = useState(() => getStoredState('selectedOutfitIndex', null));
 
-  // --- 新增：多轮对话状态 ---
-  const [sessionId, setSessionId] = useState(() => getStoredState('sessionId', null));
-  const [conversationHistory, setConversationHistory] = useState(() => getStoredState('conversationHistory', []));
-  const [adjustmentInput, setAdjustmentInput] = useState('');
-  const [isAdjusting, setIsAdjusting] = useState(false);
-  const historyEndRef = useRef(null);
-  
-  // 新增：会话列表状态
-  const [showSessionList, setShowSessionList] = useState(false);
-  const [sessions, setSessions] = useState([]);
-  const [loadingSessions, setLoadingSessions] = useState(false);
-  
-  // 新增：对话历史展开/折叠状态
-  const [collapsedMessages, setCollapsedMessages] = useState(new Set());
-  const [itemsMap, setItemsMap] = useState(() => getStoredState('itemsMap', {})); // 存储outfit_ids对应的衣物信息
-
-  // --- ⚠️ 新增：虚拟试衣相关状态 ---
+  // 虚拟试衣相关状态
   const [personImage, setPersonImage] = useState(null);
   const [personPreview, setPersonPreview] = useState(null);
-  const [hasProfilePhoto, setHasProfilePhoto] = useState(false); // 是否有个人资料照片
+  const [hasProfilePhoto, setHasProfilePhoto] = useState(false);
   const [tryOnResult, setTryOnResult] = useState(null);
   const [isTryingOn, setIsTryingOn] = useState(false);
+  
+  // 重置按钮防抖状态
+  const [isResetting, setIsResetting] = useState(false);
 
-  // --- 持久化状态到 localStorage ---
+  // 持久化状态
   useEffect(() => {
     if (recommendations) {
       localStorage.setItem(`recommendations_${user.id}_recommendations`, JSON.stringify(recommendations));
@@ -189,54 +195,17 @@ function Recommendations({ user, isUploading }) {
     }
   }, [savedPreferences, user.id]);
 
-  // 新增：持久化会话状态
   useEffect(() => {
     if (sessionId) {
-      localStorage.setItem(`recommendations_${user.id}_sessionId`, sessionId);
+      localStorage.setItem(`shared_${user.id}_sessionId`, sessionId);
     }
   }, [sessionId, user.id]);
 
-  // 组件挂载时恢复会话状态
   useEffect(() => {
-    const savedSessionId = localStorage.getItem(`recommendations_${user.id}_sessionId`);
-    const savedHistory = localStorage.getItem(`recommendations_${user.id}_conversationHistory`);
-    const savedRecs = localStorage.getItem(`recommendations_${user.id}_recommendations`);
-    
-    if (savedSessionId) {
-      setSessionId(savedSessionId);
-    }
-    if (savedHistory) {
-      try {
-        setConversationHistory(JSON.parse(savedHistory));
-      } catch (e) {
-        console.error('恢复对话历史失败:', e);
-      }
-    }
-    if (savedRecs) {
-      try {
-        setRecommendations(JSON.parse(savedRecs));
-      } catch (e) {
-        console.error('恢复推荐失败:', e);
-      }
-    }
-  }, [user.id]);
+    localStorage.setItem(`recommendations_${user.id}_selectedOutfitIndex`, JSON.stringify(selectedOutfitIndex));
+  }, [selectedOutfitIndex, user.id]);
 
-  useEffect(() => {
-    localStorage.setItem(`recommendations_${user.id}_conversationHistory`, JSON.stringify(conversationHistory));
-    // 自动滚动到最新消息
-    if (historyEndRef.current) {
-      historyEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [conversationHistory, user.id]);
-  
-  // 新增：持久化itemsMap
-  useEffect(() => {
-    if (itemsMap && Object.keys(itemsMap).length > 0) {
-      localStorage.setItem(`recommendations_${user.id}_itemsMap`, JSON.stringify(itemsMap));
-    }
-  }, [itemsMap, user.id]);
-
-  // 监听error变化，5秒后自动清除
+  // 监听error变化，自动清除
   useEffect(() => {
     if (error) {
       // 清除之前的定时器
@@ -246,7 +215,7 @@ function Recommendations({ user, isUploading }) {
       // 设置新的定时器
       errorTimerRef.current = setTimeout(() => {
         setError('');
-      }, 5000);
+      }, TIMING.ERROR_AUTO_DISMISS);
     }
     return () => {
       if (errorTimerRef.current) {
@@ -265,26 +234,22 @@ function Recommendations({ user, isUploading }) {
   // 加载用户资料照片
   useEffect(() => {
     loadUserProfilePhoto();
-    // 同时加载会话列表，用于判断是否显示按钮
-    loadSessions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.id]);
 
   const loadUserProfilePhoto = async () => {
     try {
       const profile = await getUserProfile(user.id);
-      console.log('用户资料:', profile);
       if (profile.profile_photo) {
         // 使用API_ORIGIN确保路径一致性
         const photoUrl = `${API_ORIGIN}/uploads/${profile.profile_photo}`;
-        console.log('个人照片URL:', photoUrl);
         setPersonPreview(photoUrl);
         setHasProfilePhoto(true);
       } else {
-        console.warn('用户未上传个人照片');
         setHasProfilePhoto(false);
       }
     } catch (err) {
-      console.error('加载用户照片失败:', err);
+      // 静默失败，不影响页面使用
     }
   };
 
@@ -311,19 +276,15 @@ function Recommendations({ user, isUploading }) {
     let personBlob = personImage;
     if (!personImage && personPreview) {
       try {
-        console.log('正在加载个人照片:', personPreview);
         const response = await fetch(personPreview, {
           mode: 'cors',
           cache: 'no-cache'
         });
-        console.log('照片响应状态:', response.status, response.statusText);
         if (!response.ok) {
           throw new Error(`照片加载失败: ${response.status}`);
         }
         personBlob = await response.blob();
-        console.log('照片Blob大小:', personBlob.size, 'bytes, 类型:', personBlob.type);
       } catch (err) {
-        console.error('加载个人照片错误:', err);
         alert('加载个人照片失败，请重新上传');
         return;
       }
@@ -343,8 +304,7 @@ function Recommendations({ user, isUploading }) {
       const resultUrl = URL.createObjectURL(resultBlob);
       setTryOnResult(resultUrl);
     } catch (err) {
-      console.error("Try-on error:", err);
-      setError('虚拟试衣请求失败，请确保 AI 后端服务已启动。');
+      setError('虚拟试衣请求失败，请确保AI后端服务已启动。');
     } finally {
       setIsTryingOn(false);
     }
@@ -355,37 +315,16 @@ function Recommendations({ user, isUploading }) {
     try {
       setLoading(true);
       setError('');
+      
+      // 生成新推荐时重置selectedOutfitIndex
+      setSelectedOutfitIndex(null);
+      
       const data = await getOutfitRecommendations(user.id, userPreferences);
       setRecommendations(data);
       
       // 保存会话ID
       if (data.session_id) {
         setSessionId(data.session_id);
-        // 清空对话历史（新会话）
-        setConversationHistory([]);
-        // 清空itemsMap（新会话）
-        setItemsMap({});
-      }
-      
-      // 构建初始的itemsMap（从推荐结果中提取）
-      if (data.outfits && data.outfits.length > 0) {
-        const initialItemsMap = {};
-        data.outfits.forEach(outfit => {
-          if (outfit.items) {
-            outfit.items.forEach(item => {
-              if (item.id) {
-                initialItemsMap[item.id] = {
-                  id: item.id,
-                  name: item.name,
-                  category: item.category,
-                  color: item.color,
-                  image_path: item.image_path
-                };
-              }
-            });
-          }
-        });
-        setItemsMap(initialItemsMap);
       }
     } catch (err) {
       const errorMsg = err.response?.data?.detail || '加载推荐失败';
@@ -413,283 +352,67 @@ function Recommendations({ user, isUploading }) {
     }
   };
 
-  // 新增：调整穿搭逻辑
-  const handleAdjustOutfit = async () => {
-    if (!adjustmentInput.trim()) {
-      setError('请输入调整要求');
-      return;
-    }
-    
-    if (!sessionId) {
-      setError('请先生成初始推荐');
-      return;
-    }
-
-    // 防止并发请求
-    if (isAdjusting) {
-      return;
-    }
-
-    try {
-      setIsAdjusting(true);
-      setError('');
-      
-      const result = await adjustOutfit(sessionId, adjustmentInput, user.id);
-      
-      // 更新推荐结果
-      const newRecommendations = {
-        ...recommendations,
-        outfits: result.outfits
-      };
-      setRecommendations(newRecommendations);
-      
-      // 更新对话历史和items_map
-      if (result.conversation_history) {
-        setConversationHistory(result.conversation_history);
-      }
-      if (result.items_map) {
-        setItemsMap(prevMap => ({
-          ...prevMap,
-          ...result.items_map
-        }));
-      }
-      
-      // 确保sessionId持久化
-      if (result.session_id && result.session_id !== sessionId) {
-        setSessionId(result.session_id);
-      }
-      
-      // 清空输入
-      setAdjustmentInput('');
-    } catch (err) {
-      const errorMsg = err.response?.data?.detail || '调整失败';
-      
-      // 检查会话过期
-      if (err.response?.status === 404 && errorMsg.includes('会话')) {
-        setError('会话已过期，请重新生成推荐');
-        handleNewConversation();
-      } else if (err.response?.status === 410) {
-        // 410 Gone - 会话过期
-        setError(errorMsg);
-        handleNewConversation();
-      } else {
-        setError(errorMsg);
-      }
-    } finally {
-      setIsAdjusting(false);
-    }
-  };
-
   const handleRegenerateWithPreferences = () => {
     const filteredPrefs = Object.fromEntries(
       Object.entries(preferences).filter(([_, value]) => value !== '')
     );
-    setSavedPreferences(filteredPrefs); // 暂存要求
-    setShowPreferences(false); // 关闭面板
+    setSavedPreferences(filteredPrefs);
+    setShowPreferences(false);
   };
 
   const handleRegenerate = () => {
-    // 检查是否有衣物上传中
     if (isUploading) {
       setError('有衣物正在上传中，请等待上传完成后再生成推荐');
       return;
     }
-    // 使用暂存的要求生成推荐
     fetchRecommendations(savedPreferences || {});
   };
-
-  // 新增：清空会话开始新对话
-  const handleNewConversation = () => {
-    setSessionId(null);
-    setConversationHistory([]);
-    setRecommendations(null);
-    setSavedPreferences({});
-    setItemsMap({});
-    localStorage.removeItem(`recommendations_${user.id}_sessionId`);
-    localStorage.removeItem(`recommendations_${user.id}_conversationHistory`);
-    localStorage.removeItem(`recommendations_${user.id}_recommendations`);
-    localStorage.removeItem(`recommendations_${user.id}_savedPreferences`);
-    localStorage.removeItem(`recommendations_${user.id}_itemsMap`);
-  };
   
-  // 新增：加载会话列表
-  const loadSessions = async () => {
-    try {
-      setLoadingSessions(true);
-      const data = await getUserSessions(user.id, 10);
-      setSessions(data.sessions || []);
-    } catch (err) {
-      console.error('加载会话列表失败:', err);
-      setError('加载会话列表失败');
-    } finally {
-      setLoadingSessions(false);
-    }
-  };
-  
-  // 新增：切换到指定会话
-  const switchToSession = async (newSessionId) => {
-    try {
-      setLoading(true);
-      const data = await getSessionDetail(newSessionId, user.id);
-      
-      // 更新状态
-      setSessionId(data.session_id);
-      setConversationHistory(data.conversation_history || []);
-      setItemsMap(data.items_map || {});
-      
-      // 恢复偏好
-      if (data.preferences) {
-        setSavedPreferences(data.preferences);
-      }
-      
-      // 构造虚拟的recommendations对象以保持UI可用
-      setRecommendations({
-        session_id: data.session_id,
-        outfits: [],
-        weather: null
-      });
-      
-      setShowSessionList(false);
-    } catch (err) {
-      console.error('切换会话失败:', err);
-      setError('切换会话失败');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // 新增：切换消息折叠状态
-  const toggleMessageCollapse = (index) => {
-    const newCollapsed = new Set(collapsedMessages);
-    if (newCollapsed.has(index)) {
-      newCollapsed.delete(index);
-    } else {
-      newCollapsed.add(index);
-    }
-    setCollapsedMessages(newCollapsed);
-  };
-  
-  // 新增：删除特定消息
-  const handleDeleteMessage = async (messageIndex) => {
-    if (!sessionId) return;
-    
-    // 二次确认
-    if (!window.confirm('确定要删除这条对话记录吗？')) {
-      return;
-    }
-    
-    try {
-      await deleteConversationMessage(sessionId, messageIndex, user.id);
-      
-      // 更新本地状态
-      const updatedHistory = conversationHistory.filter((_, index) => index !== messageIndex);
-      setConversationHistory(updatedHistory);
-      
-      // 如果删除后折叠集合中有大于删除索引的，需要更新
-      const newCollapsed = new Set();
-      collapsedMessages.forEach(idx => {
-        if (idx < messageIndex) {
-          newCollapsed.add(idx);
-        } else if (idx > messageIndex) {
-          newCollapsed.add(idx - 1);
-        }
-      });
-      setCollapsedMessages(newCollapsed);
-      
-    } catch (err) {
-      const errorMsg = err.response?.data?.detail || '删除消息失败';
-      setError(errorMsg);
-    }
-  };
-  
-  // 新增：删除整个会话
-  // 新增：删除整个会话
-  const handleDeleteSession = async (targetSessionId) => {
-    // 二次确认
-    if (!window.confirm('确定要删除此会话吗？所有对话历史将被永久删除！')) {
-      return;
-    }
-    
-    try {
-      // 先乐观更新前端状态（立即从列表中移除）
-      setSessions(prevSessions => 
-        prevSessions.filter(s => s.session_id !== targetSessionId)
-      );
-      
-      // 调用后端删除
-      await deleteSession(targetSessionId, user.id);
-      
-      // 如果删除的是当前会话，清空状态
-      if (targetSessionId === sessionId) {
-        handleNewConversation();
-      }
-      
-      // 如果删除后没有会话了，关闭会话列表
-      const remainingSessions = sessions.filter(s => s.session_id !== targetSessionId);
-      if (remainingSessions.length === 0) {
-        setShowSessionList(false);
-      }
-      
-    } catch (err) {
-      const errorMsg = err.response?.data?.detail || '删除会话失败';
-      setError(errorMsg);
-      // 删除失败，重新加载会话列表恢复状态
-      await loadSessions();
-    }
-  };
-  
-  // 新增：清空所有会话
-  const handleDeleteAllSessions = async () => {
-    // 二次确认（严格确认）
-    if (!window.confirm('⚠️ 确定要清空所有会话吗？\n\n这将永久删除您的所有对话历史，无法恢复！')) {
-      return;
-    }
-    
-    try {
-      // 先乐观更新前端状态
-      setSessions([]);
-      setShowSessionList(false);
-      
-      // 调用后端删除
-      const result = await deleteAllSessions(user.id);
-      
-      // 清空当前会话状态
-      handleNewConversation();
-      
-      // 显示成功消息
-      setError(`已成功清空 ${result.deleted_count} 个会话`);
-      
-    } catch (err) {
-      const errorMsg = err.response?.data?.detail || '清空会话失败';
-      setError(errorMsg);
-      // 失败时重新加载会话列表
-      await loadSessions();
-    }
-  };
-  
-  // 新增：选择某组推荐作为会话基础
   const handleSelectOutfit = async (outfitIndex, outfit) => {
     if (!sessionId) {
       setError('会话不存在，请先生成推荐');
       return;
     }
-    
+      
     try {
       setLoading(true);
       const result = await selectOutfit(sessionId, outfitIndex, outfit, user.id);
-      
-      // 更新会话历史和衣物映射
-      setConversationHistory(result.conversation_history || []);
-      setItemsMap(result.items_map || {});
-      
-      // 显示成功消息
+        
+      setSelectedOutfitIndex(outfitIndex);
       setError(`✅ ${result.message}`);
-      
-      // 3秒后清空成功消息
-      setTimeout(() => {
+        
+      // 清理之前的定时器
+      if (successMessageTimerRef.current) {
+        clearTimeout(successMessageTimerRef.current);
+      }
+      successMessageTimerRef.current = setTimeout(() => {
         setError('');
-      }, 3000);
+      }, TIMING.SUCCESS_MESSAGE);
       
+      // 立即清除推荐相关状态，准备跳转
+      setRecommendations(null);
+      setSelectedOutfitIndex(null);
+      setSavedPreferences(null);
+      setPreferences({
+        occasion: '',
+        style: '',
+        color_preference: '',
+        custom_request: ''
+      });
+      
+      // 清除localStorage数据（保留shared_sessionId供对话页刷新时恢复）
+      try {
+        localStorage.removeItem(`recommendations_${user.id}_recommendations`);
+        localStorage.removeItem(`recommendations_${user.id}_selectedOutfitIndex`);
+        localStorage.removeItem(`recommendations_${user.id}_savedPreferences`);
+        localStorage.removeItem(`recommendations_${user.id}_preferences`);
+      } catch (err) {
+        // 静默失败，不影响功能
+      }
+        
+      // 最后跳转到对话页面
+      navigate('/conversation', { state: { sessionId } });
+        
     } catch (err) {
       const errorMsg = err.response?.data?.detail || '选择推荐失败';
       setError(errorMsg);
@@ -697,37 +420,24 @@ function Recommendations({ user, isUploading }) {
       setLoading(false);
     }
   };
+  
+  // 组件卸载时清理所有定时器
+  useEffect(() => {
+    return () => {
+      if (successMessageTimerRef.current) {
+        clearTimeout(successMessageTimerRef.current);
+      }
+      if (errorTimerRef.current) {
+        clearTimeout(errorTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="recommendations-container">
       <div className="recommendations-header">
         <h1>穿搭推荐</h1>
         <div className="header-actions">
-          {(sessionId || (sessions && sessions.length > 0)) && (
-            <>
-              <button
-                className="btn-secondary"
-                onClick={() => {
-                  setShowSessionList(!showSessionList);
-                  if (!showSessionList) loadSessions();
-                }}
-                disabled={loading}
-                title="查看和切换历史会话"
-              >
-                会话列表
-              </button>
-              {sessionId && (
-                <button
-                  className="btn-secondary"
-                  onClick={handleNewConversation}
-                  disabled={loading}
-                  title="清空当前会话，开始新的推荐"
-                >
-                  新建会话
-                </button>
-              )}
-            </>
-          )}
           {!showPreferences && (
             <button
               className="btn-secondary"
@@ -747,7 +457,7 @@ function Recommendations({ user, isUploading }) {
         </div>
       </div>
 
-      {/* ⚠️ 新增：试衣结果弹出层 (Modal) */}
+      {/* 虚拟试衣结果弹窗 */}
       {tryOnResult && (
         <div className="vton-modal-overlay" onClick={() => setTryOnResult(null)}>
           <div className="vton-modal-content" onClick={e => e.stopPropagation()}>
@@ -845,211 +555,49 @@ function Recommendations({ user, isUploading }) {
         </div>
       )}
 
-      {/* 显示已暂存的要求 */}
-      {savedPreferences && Object.keys(savedPreferences).length > 0 && (
-        <div className="saved-preferences-display">
+      {/* 显示当前要求 - 始终可见 */}
+      <div className="saved-preferences-display">
+        <div className="preferences-header">
           <h3>当前要求：</h3>
-          <div className="saved-preferences-tags">
-            {savedPreferences.occasion && <span className="pref-tag">场合：{translateOccasion(savedPreferences.occasion)}</span>}
-            {savedPreferences.style && <span className="pref-tag">风格：{translateStyle(savedPreferences.style)}</span>}
-            {savedPreferences.color_preference && <span className="pref-tag">色调：{translateColor(savedPreferences.color_preference)}</span>}
-            {savedPreferences.custom_request && <span className="pref-tag">特殊要求：{savedPreferences.custom_request}</span>}
-          </div>
+          {savedPreferences && Object.values(savedPreferences).some(v => v) && (
+            <button 
+              className="btn-reset-preferences"
+              onClick={() => {
+                if (isResetting) return; // 防抖：正在重置中直接返回
+                
+                setIsResetting(true);
+                setSavedPreferences(null);
+                setPreferences({
+                  occasion: '',
+                  style: '',
+                  color_preference: '',
+                  custom_request: ''
+                });
+                try {
+                  localStorage.removeItem(`recommendations_${user.id}_savedPreferences`);
+                  localStorage.removeItem(`recommendations_${user.id}_preferences`);
+                } catch (err) {
+                  // 静默失败，不影响功能
+                }
+                
+                // 300ms后解除防抖锁
+                setTimeout(() => setIsResetting(false), 300);
+              }}
+              disabled={isResetting}
+            >
+              {isResetting ? '重置中...' : '重置'}
+            </button>
+          )}
         </div>
-      )}
+        <div className="saved-preferences-tags">
+          <span className="pref-tag">场合：{savedPreferences?.occasion ? translateOccasion(savedPreferences.occasion) : '任意'}</span>
+          <span className="pref-tag">风格：{savedPreferences?.style ? translateStyle(savedPreferences.style) : '任意'}</span>
+          <span className="pref-tag">色调：{savedPreferences?.color_preference ? translateColor(savedPreferences.color_preference) : '任意'}</span>
+          <span className="pref-tag">特殊要求：{savedPreferences?.custom_request || '无'}</span>
+        </div>
+      </div>
 
       {error && <div className="error-message">{error}</div>}
-
-      {/* 新增：对话历史和调整区域 */}
-      {sessionId && recommendations && (
-        <div className="conversation-section">
-          <div className="conversation-header">
-            <h2>对话调整</h2>
-            <button
-              className="btn-secondary"
-              onClick={() => {
-                setShowSessionList(!showSessionList);
-                if (!showSessionList) loadSessions();
-              }}
-            >
-              {showSessionList ? '关闭会话列表' : '查看历史会话'}
-            </button>
-          </div>
-          
-          {/* 会话列表侧边栏 */}
-          {showSessionList && (
-            <div className="session-list-panel">
-              <div className="session-list-header">
-                <h3>我的会话</h3>
-                {sessions.length > 0 && (
-                  <button
-                    className="btn-danger-small"
-                    onClick={handleDeleteAllSessions}
-                    title="清空所有会话"
-                  >
-                    清空全部
-                  </button>
-                )}
-              </div>
-              {loadingSessions ? (
-                <p>加载中...</p>
-              ) : sessions.length > 0 ? (
-                <div className="session-list">
-                  {sessions.map((session) => (
-                    <div
-                      key={session.session_id}
-                      className={`session-item ${session.session_id === sessionId ? 'active' : ''}`}
-                    >
-                      <div 
-                        className="session-content"
-                        onClick={() => switchToSession(session.session_id)}
-                      >
-                        <div className="session-preview">
-                          {session.preview && session.preview.length > 30
-                            ? session.preview.substring(0, 30) + '...'
-                            : session.preview || '新会话'}
-                        </div>
-                        <div className="session-meta">
-                          <span>{session.message_count} 条消息</span>
-                          <span>{new Date(session.updated_at).toLocaleDateString()}</span>
-                        </div>
-                        {session.preferences && Object.keys(session.preferences).length > 0 && (
-                          <div className="session-tags">
-                            {session.preferences.occasion && <span>{translateOccasion(session.preferences.occasion)}</span>}
-                            {session.preferences.style && <span>{translateStyle(session.preferences.style)}</span>}
-                          </div>
-                        )}
-                      </div>
-                      <button
-                        className="delete-session-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteSession(session.session_id);
-                        }}
-                        title="删除此会话"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="no-sessions">暂无历史会话</p>
-              )}
-            </div>
-          )}
-          
-          {/* 对话历史 */}
-          {conversationHistory.length > 0 && (
-            <div className="conversation-history">
-              <h3>对话历史</h3>
-              <div className="history-messages">
-                {conversationHistory.map((msg, index) => {
-                  const isCollapsed = collapsedMessages.has(index);
-                  const hasOutfitIds = msg.outfit_ids && msg.outfit_ids.length > 0;
-                  
-                  return (
-                    <div key={index} className={`message ${msg.role}`}>
-                      <div className="message-header">
-                        <div className="message-role">
-                          {msg.role === 'user' ? '你' : 'AI'}
-                        </div>
-                        <div className="message-actions">
-                          {hasOutfitIds && (
-                            <button
-                              className="collapse-toggle"
-                              onClick={() => toggleMessageCollapse(index)}
-                              title={isCollapsed ? '展开衣物' : '折叠衣物'}
-                            >
-                              {isCollapsed ? '▼ 展开' : '▲ 折叠'}
-                            </button>
-                          )}
-                          <button
-                            className="delete-message-btn"
-                            onClick={() => handleDeleteMessage(index)}
-                            title="删除这条消息"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      </div>
-                      <div className="message-content">{msg.content}</div>
-                      
-                      {/* 展示衣物缩略图 */}
-                      {hasOutfitIds && !isCollapsed && (
-                        <div className="message-outfit-items">
-                          {msg.outfit_ids.map((itemId) => {
-                            const item = itemsMap[itemId];
-                            if (!item) return null;
-                            
-                            return (
-                              <div key={itemId} className="history-outfit-item">
-                                {item.image_path ? (
-                                  <img
-                                    src={getImageUrl(item.image_path)}
-                                    alt={item.name}
-                                    title={item.name}
-                                  />
-                                ) : (
-                                  <div className="no-image-tiny">
-                                    {translateCategory(item.category)}
-                                  </div>
-                                )}
-                                <p>{item.name}</p>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                      
-                      <div className="message-timestamp">
-                        {new Date(msg.timestamp).toLocaleString()}
-                      </div>
-                    </div>
-                  );
-                })}
-                <div ref={historyEndRef} />
-              </div>
-            </div>
-          )}
-          
-          {/* 调整输入框 */}
-          <div className="adjustment-input-area">
-            <h3>继续调整穿搭</h3>
-            <div className="adjustment-examples">
-              <p>你可以说：</p>
-              <div className="example-tags">
-                <span onClick={() => setAdjustmentInput('把外套换成夹克')}>'把外套换成夹克'</span>
-                <span onClick={() => setAdjustmentInput('换个暖色系的')}>'换个暖色系的'</span>
-                <span onClick={() => setAdjustmentInput('更休闲一些')}>'更休闲一些'</span>
-                <span onClick={() => setAdjustmentInput('换双运动鞋')}>'换双运动鞋'</span>
-              </div>
-            </div>
-            <div className="adjustment-input-wrapper">
-              <input
-                type="text"
-                value={adjustmentInput}
-                onChange={(e) => setAdjustmentInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAdjustOutfit()}
-                placeholder="告诉我你想怎么调整穿搭..."
-                disabled={isAdjusting || loading}
-              />
-              <button
-                className="btn-primary"
-                onClick={handleAdjustOutfit}
-                disabled={isAdjusting || loading || !adjustmentInput.trim()}
-              >
-                {isAdjusting ? (
-                  <>
-                    <span className="spinner-small"></span>
-                    AI思考中...
-                  </>
-                ) : '调整穿搭'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {loading ? (
         <div className="loading">
@@ -1077,58 +625,64 @@ function Recommendations({ user, isUploading }) {
             </div>
           </div>
 
-          <div className="outfits-section">
-            <h2>推荐搭配</h2>
-            {recommendations.outfits && recommendations.outfits.length > 0 ? (
-              <div className="outfits-grid">
-                {recommendations.outfits.map((outfit, index) => (
-                  <div key={index} className="outfit-card">
-                    <div className="outfit-card-header">
-                      <h3>方案 {index + 1}</h3>
-                      {sessionId && conversationHistory.length === 0 && (
-                        <button
-                          className="btn-select-outfit"
-                          onClick={() => handleSelectOutfit(index, outfit)}
-                          disabled={loading}
-                          title="选择此方案并开始对话调整"
-                        >
-                          使用这组
-                        </button>
-                      )}
-                    </div>
-                    <div className="outfit-items">
-                      {outfit.items?.map((item, itemIndex) => (
-                        <div key={itemIndex} className="outfit-item">
-                          <div className="outfit-item-image">
-                            {item.image_path ? (
-                              <>
-                                <img src={getImageUrl(item.image_path)} alt={item.name} />
-                                {/* ⚠️ 新增：试衣按钮 */}
-                                <button 
-                                  className="try-on-overlay-btn"
-                                  onClick={() => handleTryOn(item)}
-                                  disabled={isTryingOn}
-                                  title="在您的人像上预览这件衣服"
-                                >
-                                  {isTryingOn ? '生成中...' : '一键试穿'}
-                                </button>
-                              </>
-                            ) : (
-                              <div className="no-image-small">{translateCategory(item.category)}</div>
-                            )}
+          {/* 推荐搭配方案 - 选择后隐藏 */}
+          {selectedOutfitIndex === null && (
+            <div className="outfits-section">
+              <h2>推荐搭配</h2>
+              {sessionId && (
+                <p className="select-outfit-hint">点击「选择这组」选择一组方案，可继续微调搭配</p>
+              )}
+              {recommendations.outfits && recommendations.outfits.length > 0 ? (
+                <div className="outfits-grid">
+                  {recommendations.outfits.map((outfit, index) => (
+                    <div key={index} className="outfit-card">
+                      <div className="outfit-card-header">
+                        <h3>方案 {index + 1}</h3>
+                        {sessionId && (
+                          <button
+                            className="btn-select-outfit"
+                            onClick={() => handleSelectOutfit(index, outfit)}
+                            disabled={loading}
+                            title="选择此方案并开始对话调整"
+                          >
+                            选择这组
+                          </button>
+                        )}
+                      </div>
+                      <div className="outfit-items">
+                        {outfit.items?.map((item, itemIndex) => (
+                          <div key={itemIndex} className="outfit-item">
+                            <div className="outfit-item-image">
+                              {item.image_path ? (
+                                <>
+                                  <img src={getImageUrl(item.image_path)} alt={item.name} />
+                                  {/* ⚠️ 新增：试衣按钮 */}
+                                  <button 
+                                    className="try-on-overlay-btn"
+                                    onClick={() => handleTryOn(item)}
+                                    disabled={isTryingOn}
+                                    title="在您的人像上预览这件衣服"
+                                  >
+                                    {isTryingOn ? '生成中...' : '一键试穿'}
+                                  </button>
+                                </>
+                              ) : (
+                                <div className="no-image-small">{translateCategory(item.category)}</div>
+                              )}
+                            </div>
+                            <p>{item.name}</p>
                           </div>
-                          <p>{item.name}</p>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                      {outfit.description && <p className="outfit-description">{outfit.description}</p>}
                     </div>
-                    {outfit.description && <p className="outfit-description">{outfit.description}</p>}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="no-outfits">暂无推荐搭配</p>
-            )}
-          </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="no-outfits">暂无推荐搭配</p>
+              )}
+            </div>
+          )}
 
           {/* 原有缺失单品模块 */}
           {recommendations.missing_items && recommendations.missing_items.length > 0 && (

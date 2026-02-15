@@ -2,6 +2,7 @@ from typing import Dict, List, Any, Optional
 import uuid
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 from app.models.conversation import ConversationSession
 
 
@@ -63,6 +64,8 @@ class ConversationManager:
     
     # SQLAlchemy的JSON字段需要重新赋值才能触发更新
     session.conversation_history = history[:]
+    # 关键修复：显式标记JSON字段已修改
+    flag_modified(session, 'conversation_history')
     session.updated_at = datetime.now()
     
     db.commit()
@@ -77,6 +80,7 @@ class ConversationManager:
     
     # SQLAlchemy的JSON字段需要重新赋值才能触发更新
     session.current_outfit = outfit_ids[:]
+    flag_modified(session, 'current_outfit')
     session.updated_at = datetime.now()
     
     db.commit()
@@ -109,6 +113,7 @@ class ConversationManager:
     
     # 重新赋值触发SQLAlchemy更新
     session.conversation_history = history[:]
+    flag_modified(session, 'conversation_history')
     session.updated_at = datetime.now()
     
     db.commit()
@@ -141,11 +146,11 @@ class ConversationManager:
     return count
   
   @staticmethod
-  def get_user_sessions(db: Session, user_id: int, limit: int = 10) -> List[ConversationSession]:
-    """获取用户的所有会话（最近的N个）"""
+  def get_user_sessions(db: Session, user_id: int, limit: int = 10, offset: int = 0) -> List[ConversationSession]:
+    """获取用户的所有会话（支持分页）"""
     return db.query(ConversationSession).filter(
       ConversationSession.user_id == user_id
-    ).order_by(ConversationSession.updated_at.desc()).limit(limit).all()
+    ).order_by(ConversationSession.updated_at.desc()).offset(offset).limit(limit).all()
   
   @staticmethod
   def cleanup_old_sessions(db: Session, days: int = 7) -> int:

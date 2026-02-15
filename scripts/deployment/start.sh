@@ -15,7 +15,7 @@ pkill -f "uvicorn app.main:app" 2>/dev/null && echo "  已停止旧后端服务 
 pkill -f "node.*vite" 2>/dev/null && echo "  已停止旧前端服务 (6006)" || true
 sleep 2
 
-PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 LOG_DIR="$PROJECT_DIR/logs"
 mkdir -p "$LOG_DIR"
 

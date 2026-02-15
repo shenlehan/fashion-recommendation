@@ -18,10 +18,10 @@ const CATEGORY_MAP = {
 };
 
 const SEASON_MAP = {
-  'spring': '春季',
-  'summer': '夏季',
-  'fall': '秋季',
-  'winter': '冬季'
+  'spring': '春',
+  'summer': '夏',
+  'fall': '秋',
+  'winter': '冬'
 };
 
 const translateCategory = (category) => {
@@ -94,7 +94,6 @@ useEffect(() => {
       const statusData = await getUploadStatus(user.id);
       if (statusData.has_active_task) {
         const task = statusData.task;
-        console.log('检测到进行中的上传任务:', task);
         
         // 标记为从刷新恢复
         setIsUploadFromRestore(true);
@@ -248,7 +247,6 @@ useEffect(() => {
         while (true) {
           // 检查是否已取消，立即跳出循环
           if (isAbortedRef.current) {
-            console.log('检测到取消标记，立即终止SSE读取循环');
             break;
           }
           
@@ -332,7 +330,6 @@ useEffect(() => {
       if (err.name === 'AbortError') {
         // 使用ref中的ID主动删除已上传的衣物
         const idsToDelete = uploadedIdsRef.current;
-        console.log('取消上传，需要删除的ID:', idsToDelete);
         if (idsToDelete.length > 0) {
           try {
             await deleteClothingBatch(idsToDelete);
@@ -656,9 +653,9 @@ useEffect(() => {
                         <h3>{item.name}</h3>
                         <div className="item-info">
                           {item.color && <span className="badge color">{item.color}</span>}
+                          {item.season && <span className="badge season">{translateSeasons(item.season)}</span>}
+                          {item.material && <span className="badge material">{item.material}</span>}
                         </div>
-                        {item.season && <p className="season">季节：{translateSeasons(item.season)}</p>}
-                        {item.material && <p className="material">材质：{item.material}</p>}
                         {!isSelectionMode && (
                           <button
                             className="btn-delete"

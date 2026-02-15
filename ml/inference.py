@@ -520,6 +520,10 @@ JSON:
         pref_parts.append(f"Color tone: {preferences['color_preference']}")
       if pref_parts:
         pref_text = "\nUSER PREFERENCES: " + ", ".join(pref_parts)
+      
+      # 特殊要求单独一行
+      if preferences.get('custom_request'):
+        pref_text += f"\nSPECIAL REQUEST: {preferences['custom_request']}"
 
     # 构建当前穿搭信息
     current_outfit_items = []
@@ -541,7 +545,9 @@ JSON:
     conversation_text = ""
     if conversation_history:
       history_lines = []
-      for msg in conversation_history[-5:]:  # 只保留最近5轮
+      # 只保留最近3轮对话（最多6条消息）
+      recent_messages = conversation_history[-6:]
+      for msg in recent_messages:
         role = msg.get('role', 'unknown')
         content = msg.get('content', '')
         if role == 'user':
@@ -560,34 +566,19 @@ WEATHER: {weather_text}
 WARDROBE:
 {wardrobe_text}{conversation_text}
 
-USER REQUEST (translate to English if needed): {adjustment_request}
+USER REQUEST: {adjustment_request}
 
-CRITICAL RULES:
-1. PRESERVATION PRIORITY:
-   - If user only mentions changing ONE category, KEEP ALL OTHER categories unchanged
-   - If user says change the jacket, keep bottom, shoes, and accessories from current outfit
-   - If user says change dress to pants, replace ONLY the dress/full_body, keep shoes and accessories
-   - NEVER remove shoes unless explicitly requested
-
-2. MANDATORY CATEGORIES (must include in final outfit):
-   - BOTTOM or FULL_BODY: Exactly one (required)
-   - SHOES: Exactly one (ALWAYS required unless user says remove shoes)
-   - TOPS: At least one if not using full_body
-
-3. EXAMPLE:
-   Current: [T-shirt(1), Dress(10), Sneakers(15)]
-   Request: Change dress to pants
-   Result: [T-shirt(1), Jeans(12), Sneakers(15)] - Shoes preserved
-
-4. Return 1-2 adjusted outfits
-5. Description MUST be in Chinese
+RULES:
+1. If user changes ONE category, keep others from current outfit
+2. ALWAYS include: BOTTOM or FULL_BODY, SHOES, at least one TOP
+3. Return 1-2 outfits, description in Chinese
 
 JSON:
 {{
   "outfits": [
     {{
       "items": [1, 3, 5, 8],
-      "description": "<Chinese description explaining what changed and why>"
+      "description": "<Chinese description>"
     }}
   ],
   "missing_items": []

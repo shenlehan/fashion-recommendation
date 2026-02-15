@@ -118,8 +118,8 @@ export const selectOutfit = async (sessionId, outfitIndex, outfitData, userId) =
 };
 
 // --- 会话管理 ---
-export const getUserSessions = async (userId, limit = 10) => {
-  const response = await api.get(`/recommend/sessions?user_id=${userId}&limit=${limit}`);
+export const getUserSessions = async (userId, limit = 20, offset = 0) => {
+  const response = await api.get(`/recommend/sessions?user_id=${userId}&limit=${limit}&offset=${offset}`);
   return response.data;
 };
 

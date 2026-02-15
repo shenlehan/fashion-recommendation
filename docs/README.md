@@ -219,7 +219,7 @@ fashion-recommendation/
 │   └── requirements.txt
 ├── frontend/            # React 前端
 │   ├── src/
-│   │   ├── pages/       # 页面组件 (Recommendations.jsx 支持对话)
+│   │   ├── pages/       # 页面组件 (Wardrobe/Recommendations/Conversation/Profile)
 │   │   └── services/    # API 调用
 │   └── package.json
 ├── ml/                  # AI 服务

@@ -7,7 +7,8 @@
 1. **用户认证** - 登录和注册页面
 2. **我的衣橱** - 查看、上传和管理衣物
 3. **获取推荐** - 基于天气和衣橱的 AI 穿搭推荐
-4. **自定义推荐** - 根据用户偏好重新生成推荐
+4. **对话调整** - 多轮对话优化穿搭方案（独立界面）
+5. **个人资料** - 查看和修改用户信息
 
 ## 技术栈
 
@@ -52,9 +53,13 @@ src/
 │   ├── Register.jsx
 │   ├── Wardrobe.jsx
 │   ├── Recommendations.jsx
+│   ├── Conversation.jsx
+│   ├── Profile.jsx
 │   ├── Auth.css
 │   ├── Wardrobe.css
-│   └── Recommendations.css
+│   ├── Recommendations.css
+│   ├── Conversation.css
+│   └── Profile.css
 ├── services/        # API 服务层
 │   └── api.js
 ├── App.jsx          # 主应用组件（包含路由）
@@ -69,22 +74,46 @@ src/
 
 ### 可用的 API 函数
 
+#### 用户认证
 - `registerUser(userData)` - 注册新用户
 - `loginUser(username, password)` - 用户登录
 - `getUserProfile(userId)` - 获取用户个人信息
-- `uploadClothingItem(userId, formData)` - 上传衣物图片
+- `updateUserProfile(userId, updateData)` - 更新用户信息
+
+#### 衣橱管理
+- `uploadClothingItem(userId, formData)` - 上传单件衣物
+- `uploadClothingBatch(userId, formData)` - 批量上传衣物
 - `getUserWardrobe(userId)` - 获取用户衣橱
-- `deleteClothingItem(itemId)` - 删除衣橱物品
+- `deleteClothingItem(itemId)` - 删除单件衣物
+- `deleteClothingBatch(itemIds)` - 批量删除衣物
+- `getUploadStatus(userId)` - 获取上传状态
+
+#### 推荐功能
 - `getOutfitRecommendations(userId, preferences)` - 获取穿搭推荐
+- `selectOutfit(sessionId, outfitIndex, outfitData, userId)` - 选择方案（跳转到对话调整）
+
+#### 对话调整
+- `adjustOutfit(sessionId, adjustmentRequest, userId)` - 多轮对话调整
+- `getUserSessions(userId, limit, offset)` - 获取会话列表
+- `getSessionDetail(sessionId, userId)` - 获取会话详情
+- `deleteConversationMessage(sessionId, messageIndex, userId)` - 删除消息
+- `deleteSession(sessionId, userId)` - 删除会话
+- `deleteAllSessions(userId)` - 删除所有会话
+
+#### 虚拟试衣
+- `virtualTryOn(personImgBlob, clothImgBlob, category)` - 虚拟试衣
+- `fetchImageAsBlob(url)` - 获取图片Blob
 
 ## 用户流程
 
 1. **注册/登录** - 创建账户或使用现有凭据登录
-2. **添加物品** - 上传衣物图片来构建你的衣橱
+2. **添加物品** - 上传衣物图片来构建你的衣橱（支持批量上传）
 3. **查看衣橱** - 浏览所有衣物，包括分类、颜色和季节
 4. **获取推荐** - 接收个性化穿搭建议
 5. **自定义** - 按场合、风格和颜色偏好筛选推荐
-6. **重新生成** - 根据你的反馈获取新建议
+6. **选择方案** - 点击「选择这组」进入对话调整界面
+7. **对话调整** - 通过多轮对话优化穿搭方案（"换外套"、"更暖色系"）
+8. **虚拟试衣** - 在推荐或对话界面预览上身效果
 
 ## 详细功能
 
@@ -101,13 +130,27 @@ src/
 
 ### 推荐功能
 - 基于用户城市的天气感知建议
-- 从衣橱物品中组合穿搭
+- 从衣橱物品中组合穿搭（使用向量检索智能筛选）
 - 缺失物品分析
 - 可自定义筛选：
-  - 场合（休闲、商务、正式、运动、聚会）
-  - 风格（经典、潮流、极简、波希米亚、街头）
-  - 颜色偏好
+  - 场合（日常、通勤、商务、正式、聚会、约会、旅行、户外、居家）
+  - 风格（经典、现代、极简、优雅、休闲、街头、潮流、复古、运动、学院）
+  - 色调（中性色调、暖色调、冷色调）
+  - 特殊要求（自定义文本）
 - 一键重新生成
+- 选择方案后跳转到对话调整界面
+
+### 对话调整功能（独立界面）
+- 多轮对话优化穿搭方案
+- 自然语言交互（"换个外套"、"更暖色系"、"不要红色"）
+- 对话历史记录（最多20轮）
+- 消息成对删除（用户+AI响应）
+- 会话持久化（3天有效期）
+- 重置对话并返回推荐界面
+
+### 个人资料
+- 查看和编辑用户信息（年龄、身高、体重、城市等）
+- 上传个人照片（用于虚拟试衣）
 
 ## 注意事项
 
@@ -119,8 +162,9 @@ src/
 ## 未来增强
 
 - [ ] 基于 JWT 的认证
-- [ ] 个人信息页面，用于更新用户信息
 - [ ] 穿搭收藏/保存功能
 - [ ] 穿搭社交分享
-- [ ] 高级筛选和搜索
+- [ ] 衣橱高级筛选和搜索
 - [ ] 穿搭历史/日历
+- [ ] 会话分享功能
+- [ ] 语音对话调整

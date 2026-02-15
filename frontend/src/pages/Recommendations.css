@@ -9,6 +9,27 @@
   min-height: 100vh;
 }
 
+/* 消息提示 */
+.error-message {
+  background-color: #fef2f2;
+  color: #dc2626;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border: 1px solid #fecaca;
+  animation: fadeIn 0.3s ease;
+}
+
+.success-message {
+  background-color: #f0fdf4;
+  color: #16a34a;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border: 1px solid #bbf7d0;
+  animation: fadeIn 0.3s ease;
+}
+
 .recommendations-header {
   display: flex;
   justify-content: space-between;
@@ -127,7 +148,30 @@
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
+  margin: 0;
+}
+
+.preferences-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 12px;
+}
+
+.btn-reset-preferences {
+  padding: 4px 12px;
+  font-size: 14px;
+  color: var(--primary-color);
+  background: transparent;
+  border: 1px solid var(--primary-color);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-reset-preferences:hover {
+  background: var(--primary-color);
+  color: white;
 }
 
 .saved-preferences-tags {
@@ -190,8 +234,8 @@
 }
 
 .message.assistant {
-  background: rgba(248, 248, 248, 1);
-  border-left: 4px solid #888;
+  background: rgba(99, 102, 241, 0.08);
+  border-left: 4px solid rgba(99, 102, 241, 0.5);
 }
 
 .message-role {
@@ -202,7 +246,7 @@
 }
 
 .message.assistant .message-role {
-  color: #666;
+  color: var(--primary-color);
 }
 
 .message-content {
@@ -235,10 +279,10 @@
   border-left: 3px solid var(--primary-color);
 }
 
-.adjustment-examples p {
-  font-size: 13px;
+.adjustment-examples p {font-size: 14px;
   color: var(--text-secondary);
   margin-bottom: 10px;
+  margin-left: 6px;
   font-weight: 500;
 }
 
@@ -383,9 +427,21 @@
 .outfits-section h2 {
   font-size: 28px;
   font-weight: 700;
-  margin-bottom: 32px;
+  margin-bottom: 16px;
   color: var(--text-primary);
   text-align: center;
+}
+
+.select-outfit-hint {
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+  padding: 10px 16px;
+  background: rgba(var(--primary-color-rgb), 0.08);
+  border-radius: 8px;
+  display: inline-block;
+  width: 100%;
 }
 
 .outfits-grid {
@@ -759,7 +815,7 @@
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 2px solid transparent;
+  border: 1px solid #e0e0e0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -971,4 +1027,110 @@
   color: var(--text-secondary);
   text-align: right;
   margin-top: 4px;
+}
+
+/* ==========================================================================
+   删除确认模态框样式（与衣橱风格一致）
+   ========================================================================== */
+.delete-confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
+}
+
+.delete-confirm-modal {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.delete-confirm-modal h3 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+  margin: 0 0 20px 0;
+}
+
+.delete-confirm-modal p {
+  font-size: 16px;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+
+.delete-confirm-warning {
+  font-size: 14px;
+  color: #dc3545;
+  font-weight: 600;
+  margin-top: 16px;
+  margin-bottom: 0;
+}
+
+.delete-confirm-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.delete-confirm-actions .btn-cancel {
+  flex: 1;
+  padding: 12px 24px;
+  background: #e9ecef;
+  color: #495057;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.delete-confirm-actions .btn-cancel:hover {
+  background: #dee2e6;
+  transform: translateY(-1px);
+}
+
+.delete-confirm-actions .btn-confirm-delete {
+  flex: 1;
+  padding: 12px 24px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.delete-confirm-actions .btn-confirm-delete:hover {
+  background: #c82333;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
 }
