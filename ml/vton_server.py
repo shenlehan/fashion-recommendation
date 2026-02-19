@@ -9,6 +9,8 @@ import numpy as np
 from PIL import Image, ImageFilter, ImageOps
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import Response
+from typing import List
+import json
 from contextlib import asynccontextmanager
 from diffusers import StableDiffusionLatentUpscalePipeline
 
@@ -30,6 +32,24 @@ pipeline = None
 automasker = None
 upscaler = None 
 device = "cuda" if torch.cuda.is_available() else "cpu"
+
+# --- 类别 → mask_type 映射 ---
+CATEGORY_TO_MASK_TYPE = {
+    'inner_top': 'upper',
+    'mid_top': 'upper', 
+    'outer_top': 'outer',
+    'bottom': 'lower',
+    'full_body': 'overall',
+}
+
+# --- 试穿顺序优先级（数字越小越先穿）---
+CATEGORY_PRIORITY = {
+    'inner_top': 10,
+    'mid_top': 20,
+    'outer_top': 30,
+    'bottom': 40,
+    'full_body': 50,
+}
 
 # --- 核心辅助函数：防变形缩放 ---
 def resize_and_padding(image, target_size):
@@ -166,6 +186,89 @@ async def process_tryon(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"AI Error: {str(e)}")
+
+@app.post("/batch_tryon")
+async def batch_tryon(
+    person_img: UploadFile = File(...),
+    cloth_imgs: List[UploadFile] = File(...),
+    categories: str = Form(...)
+):
+    """批量试穿：按顺序依次试穿多件衣服"""
+    global pipeline, automasker
+    
+    debug_dir = os.path.join(current_dir, "output", "debug_batch")
+    os.makedirs(debug_dir, exist_ok=True)
+    
+    try:
+        # 1. 解析类别列表
+        category_list = json.loads(categories)
+        print(f"📦 收到批量试穿请求: {len(cloth_imgs)} 件衣服, 类别: {category_list}")
+        
+        # 2. 读取所有衣服图片
+        cloth_images = []
+        for cloth_file in cloth_imgs:
+            cloth_raw = Image.open(io.BytesIO(await cloth_file.read())).convert("RGB")
+            cloth_images.append(cloth_raw)
+        
+        # 3. 按优先级排序（内层→外层→下装）
+        items = list(zip(category_list, cloth_images))
+        items.sort(key=lambda x: CATEGORY_PRIORITY.get(x[0], 99))
+        
+        # 4. 读取人像
+        person_raw = Image.open(io.BytesIO(await person_img.read())).convert("RGB")
+        target_size = (768, 1024)
+        current_person, _ = resize_and_padding(person_raw, target_size)
+        
+        # 保存原始人像用于调试
+        current_person.save(os.path.join(debug_dir, "input_person.png"))
+        
+        # 5. 顺序推理
+        for i, (category, cloth_raw) in enumerate(items):
+            print(f"🔄 试穿第 {i+1}/{len(items)} 件: {category}")
+            
+            mask_type = CATEGORY_TO_MASK_TYPE.get(category, 'upper')
+            cloth_resized, _ = resize_and_padding(cloth_raw, target_size)
+            
+            # 保存衣服图片用于调试
+            cloth_resized.save(os.path.join(debug_dir, f"cloth_{i+1}_{category}.png"))
+            
+            # 生成 mask
+            print(f"🔍 生成 mask (type={mask_type})...")
+            mask_result = automasker(current_person, mask_type=mask_type)
+            mask = mask_result['mask']
+            mask.save(os.path.join(debug_dir, f"mask_{i+1}_{category}.png"))
+            mask_blurred = mask.filter(ImageFilter.GaussianBlur(radius=5))
+            
+            # 推理
+            print(f"🎨 Diffusion 推理中...")
+            generator = torch.Generator(device=device).manual_seed(42)
+            result_image = pipeline(
+                image=current_person,
+                condition_image=cloth_resized,
+                mask=mask_blurred,
+                num_inference_steps=50,
+                guidance_scale=2.5,
+                generator=generator
+            )[0]
+            
+            # Paste Back
+            mask_for_composite = mask.convert("L").filter(ImageFilter.GaussianBlur(radius=1))
+            current_person = Image.composite(result_image, current_person, mask_for_composite)
+            
+            # 保存中间结果
+            current_person.save(os.path.join(debug_dir, f"step_{i+1}_{category}.png"))
+            print(f"✅ 第 {i+1} 件完成")
+        
+        # 6. 返回最终结果
+        print(f"🎉 批量试穿完成！共 {len(items)} 件")
+        img_byte_arr = io.BytesIO()
+        current_person.save(img_byte_arr, format='PNG')
+        return Response(content=img_byte_arr.getvalue(), media_type="image/png")
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"批量试穿失败: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8001)

@@ -3,6 +3,12 @@ import axios from 'axios';
 // 确保与后端 main.py 的前缀一致
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:6008/api/v1';
 
+// --- 类别优先级（用于排序）---
+const CATEGORY_PRIORITY = {
+  'inner_top': 10, 'mid_top': 20, 'outer_top': 30, 'bottom': 40, 'full_body': 50
+};
+const UNSUPPORTED_CATEGORIES = ['shoes', 'socks', 'accessories', 'underwear', 'unknown'];
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
@@ -196,6 +202,48 @@ export const virtualTryOn = async (personImgBlob, clothImgBlob, category = 'uppe
     console.error("virtualTryOn Error:", error);
     throw error;
   }
+};
+
+/**
+ * 批量试穿：一次试穿多件衣服
+ * @param {Blob} personImgBlob - 人像照片
+ * @param {Array} clothItems - 衣物数组 [{image_path, category}, ...]
+ * @param {Function} getImageUrl - URL 转换函数
+ */
+export const batchVirtualTryOn = async (personImgBlob, clothItems, getImageUrl) => {
+  // 1. 过滤不支持的类别
+  const validItems = clothItems.filter(
+    item => !UNSUPPORTED_CATEGORIES.includes(item.category)
+  );
+  
+  if (validItems.length === 0) {
+    throw new Error('没有可试穿的衣物（鞋子、配饰等不支持试穿）');
+  }
+  
+  // 2. 按优先级排序
+  validItems.sort((a, b) => 
+    (CATEGORY_PRIORITY[a.category] || 99) - (CATEGORY_PRIORITY[b.category] || 99)
+  );
+  
+  // 3. 构建 FormData
+  const formData = new FormData();
+  formData.append('person_img', personImgBlob);
+  
+  for (const item of validItems) {
+    const blob = await fetchImageAsBlob(getImageUrl(item.image_path));
+    formData.append('cloth_imgs', blob);
+  }
+  
+  formData.append('categories', JSON.stringify(validItems.map(i => i.category)));
+  
+  // 4. 发送请求
+  const response = await api.post('/vton/batch-try-on', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    responseType: 'blob',
+    timeout: 300000  // 5分钟超时
+  });
+  
+  return response.data;
 };
 
 export default api;

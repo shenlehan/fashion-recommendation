@@ -8,6 +8,7 @@ import {
   deleteSession, 
   deleteAllSessions,
   virtualTryOn,
+  batchVirtualTryOn,
   fetchImageAsBlob,
   getUserProfile,
   API_ORIGIN 
@@ -251,6 +252,42 @@ function Conversation({ user, isUploading }) {
     } catch (err) {
       console.error("试衣错误:", err);
       setError('虚拟试衣请求失败,请确保AI后端服务已启动');
+    } finally {
+      setIsTryingOn(false);
+    }
+  };
+
+  // --- 批量试穿逻辑 ---
+  const handleBatchTryOn = async (items) => {
+    if (!personPreview) {
+      alert(hasProfilePhoto 
+        ? '未加载个人照片,请刷新页面' 
+        : '请先去个人资料页面上传正面照'
+      );
+      return;
+    }
+
+    let personBlob = personImage;
+    if (!personImage && personPreview) {
+      try {
+        const response = await fetch(personPreview, { mode: 'cors', cache: 'no-cache' });
+        if (!response.ok) throw new Error(`照片加载失败: ${response.status}`);
+        personBlob = await response.blob();
+      } catch (err) {
+        alert('加载个人照片失败,请重新上传');
+        return;
+      }
+    }
+
+    try {
+      setIsTryingOn(true);
+      setError('');
+      
+      const resultBlob = await batchVirtualTryOn(personBlob, items, getImageUrl);
+      const resultUrl = URL.createObjectURL(resultBlob);
+      setTryOnResult(resultUrl);
+    } catch (err) {
+      setError(err.message || '批量试穿失败,请确保AI后端服务已启动');
     } finally {
       setIsTryingOn(false);
     }
@@ -810,6 +847,19 @@ function Conversation({ user, isUploading }) {
                             
                             {hasOutfitIds && !isCollapsed && (
                               <div className="message-outfit-items">
+                              <div className="outfit-items-header">
+                                <button
+                                  className="btn-batch-tryon-mini"
+                                  onClick={() => {
+                                    const items = msg.outfit_ids.map(id => itemsMap[id]).filter(Boolean);
+                                    handleBatchTryOn(items);
+                                  }}
+                                  disabled={isTryingOn}
+                                  title="一键试穿这组搭配的所有衣物"
+                                >
+                                  {isTryingOn ? '生成中...' : '整套试穿'}
+                                </button>
+                              </div>
                               {msg.outfit_ids.map((itemId) => {
                                 const item = itemsMap[itemId];
                                 if (!item) return null;

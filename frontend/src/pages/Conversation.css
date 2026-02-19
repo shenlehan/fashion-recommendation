@@ -559,6 +559,36 @@
   border-radius: 6px;
 }
 
+/* 整套试穿按钮区域 */
+.outfit-items-header {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.btn-batch-tryon-mini {
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-batch-tryon-mini:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-batch-tryon-mini:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .history-outfit-item {
   display: flex;
   flex-direction: column;

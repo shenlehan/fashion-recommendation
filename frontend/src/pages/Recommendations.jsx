@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { getOutfitRecommendations, selectOutfit, API_ORIGIN, virtualTryOn, fetchImageAsBlob, getUserProfile } from '../services/api';
+import { getOutfitRecommendations, selectOutfit, API_ORIGIN, virtualTryOn, batchVirtualTryOn, fetchImageAsBlob, getUserProfile } from '../services/api';
 import './Recommendations.css';
 
 // ===== 常量定义 =====
@@ -178,6 +178,10 @@ function Recommendations({ user, isUploading }) {
   // 重置按钮防抖状态
   const [isResetting, setIsResetting] = useState(false);
 
+  // 批量选择相关状态
+  const [batchSelectMode, setBatchSelectMode] = useState(false);
+  const [selectedItems, setSelectedItems] = useState([]);
+
   // 持久化状态
   useEffect(() => {
     if (recommendations) {
@@ -310,6 +314,60 @@ function Recommendations({ user, isUploading }) {
     }
   };
 
+  // --- 批量试穿逻辑 ---
+  const handleBatchTryOn = async (items) => {
+    if (!personPreview) {
+      alert(hasProfilePhoto 
+        ? '未加载个人照片，请刷新页面' 
+        : '请先去个人资料页面上传一张正面照'
+      );
+      return;
+    }
+
+    let personBlob = personImage;
+    if (!personImage && personPreview) {
+      try {
+        const response = await fetch(personPreview, { mode: 'cors', cache: 'no-cache' });
+        if (!response.ok) throw new Error(`照片加载失败: ${response.status}`);
+        personBlob = await response.blob();
+      } catch (err) {
+        alert('加载个人照片失败，请重新上传');
+        return;
+      }
+    }
+
+    try {
+      setIsTryingOn(true);
+      setError('');
+      
+      const resultBlob = await batchVirtualTryOn(personBlob, items, getImageUrl);
+      const resultUrl = URL.createObjectURL(resultBlob);
+      setTryOnResult(resultUrl);
+    } catch (err) {
+      setError(err.message || '批量试穿失败，请确保AI后端服务已启动');
+    } finally {
+      setIsTryingOn(false);
+    }
+  };
+
+  // --- 切换批量选择模式 ---
+  const toggleBatchSelectMode = () => {
+    setBatchSelectMode(!batchSelectMode);
+    setSelectedItems([]);
+  };
+
+  // --- 切换单件选中状态 ---
+  const toggleItemSelection = (item) => {
+    setSelectedItems(prev => {
+      const exists = prev.find(i => i.id === item.id);
+      if (exists) {
+        return prev.filter(i => i.id !== item.id);
+      } else {
+        return [...prev, item];
+      }
+    });
+  };
+
   // --- 原有推荐获取逻辑 ---
   const fetchRecommendations = async (userPreferences = {}) => {
     try {
@@ -438,6 +496,15 @@ function Recommendations({ user, isUploading }) {
       <div className="recommendations-header">
         <h1>穿搭推荐</h1>
         <div className="header-actions">
+          {recommendations && (
+            <button
+              className={`btn-batch-mode ${batchSelectMode ? 'active' : ''}`}
+              onClick={toggleBatchSelectMode}
+              disabled={loading || isTryingOn}
+            >
+              {batchSelectMode ? '退出选择' : '批量选择'}
+            </button>
+          )}
           {!showPreferences && (
             <button
               className="btn-secondary"
@@ -638,33 +705,52 @@ function Recommendations({ user, isUploading }) {
                     <div key={index} className="outfit-card">
                       <div className="outfit-card-header">
                         <h3>方案 {index + 1}</h3>
-                        {sessionId && (
+                        <div className="outfit-card-actions">
                           <button
-                            className="btn-select-outfit"
-                            onClick={() => handleSelectOutfit(index, outfit)}
-                            disabled={loading}
-                            title="选择此方案并开始对话调整"
+                            className="btn-batch-tryon"
+                            onClick={() => handleBatchTryOn(outfit.items)}
+                            disabled={isTryingOn}
+                            title="一键试穿这套搭配的所有衣物"
                           >
-                            选择这组
+                            {isTryingOn ? '生成中...' : '整套试穿'}
                           </button>
-                        )}
+                          {sessionId && (
+                            <button
+                              className="btn-select-outfit"
+                              onClick={() => handleSelectOutfit(index, outfit)}
+                              disabled={loading}
+                              title="选择此方案并开始对话调整"
+                            >
+                              选择这组
+                            </button>
+                          )}
+                        </div>
                       </div>
                       <div className="outfit-items">
                         {outfit.items?.map((item, itemIndex) => (
-                          <div key={itemIndex} className="outfit-item">
+                          <div key={itemIndex} className={`outfit-item ${batchSelectMode && selectedItems.find(i => i.id === item.id) ? 'selected' : ''}`}>
+                            {batchSelectMode && !['shoes', 'socks', 'accessories', 'underwear'].includes(item.category) && (
+                              <input
+                                type="checkbox"
+                                className="outfit-item-checkbox"
+                                checked={!!selectedItems.find(i => i.id === item.id)}
+                                onChange={() => toggleItemSelection(item)}
+                              />
+                            )}
                             <div className="outfit-item-image">
                               {item.image_path ? (
                                 <>
                                   <img src={getImageUrl(item.image_path)} alt={item.name} />
-                                  {/* ⚠️ 新增：试衣按钮 */}
-                                  <button 
-                                    className="try-on-overlay-btn"
-                                    onClick={() => handleTryOn(item)}
-                                    disabled={isTryingOn}
-                                    title="在您的人像上预览这件衣服"
-                                  >
-                                    {isTryingOn ? '生成中...' : '一键试穿'}
-                                  </button>
+                                  {!batchSelectMode && (
+                                    <button 
+                                      className="try-on-overlay-btn"
+                                      onClick={() => handleTryOn(item)}
+                                      disabled={isTryingOn}
+                                      title="在您的人像上预览这件衣服"
+                                    >
+                                      {isTryingOn ? '生成中...' : '一键试穿'}
+                                    </button>
+                                  )}
                                 </>
                               ) : (
                                 <div className="no-image-small">{translateCategory(item.category)}</div>
@@ -713,6 +799,20 @@ function Recommendations({ user, isUploading }) {
               <li>AI 智能搭配</li>
             </ul>
           </div>
+        </div>
+      )}
+
+      {/* 批量选择模式下的浮动按钮 */}
+      {batchSelectMode && selectedItems.length > 0 && (
+        <div className="batch-tryon-footer">
+          <span>已选择 {selectedItems.length} 件衣物</span>
+          <button
+            className="btn-primary"
+            onClick={() => handleBatchTryOn(selectedItems)}
+            disabled={isTryingOn}
+          >
+            {isTryingOn ? '生成中...' : `试穿选中的 ${selectedItems.length} 件`}
+          </button>
         </div>
       )}
     </div>

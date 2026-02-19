@@ -748,6 +748,114 @@
 }
 
 /* ==========================================================================
+   11. 批量试穿相关样式
+   ========================================================================== */
+
+/* 整套试穿按钮 */
+.btn-batch-tryon {
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-batch-tryon:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-batch-tryon:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* outfit-card-header 内的按钮组 */
+.outfit-card-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* 批量选择模式切换按钮 */
+.btn-batch-mode {
+  padding: 8px 16px;
+  background: #f0f0f0;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.btn-batch-mode:hover {
+  background: #e0e0e0;
+}
+
+.btn-batch-mode.active {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+/* 衣物复选框 */
+.outfit-item-checkbox {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  z-index: 10;
+  accent-color: #667eea;
+}
+
+.outfit-item.selected {
+  outline: 3px solid #667eea;
+  border-radius: 8px;
+}
+
+/* 批量试穿浮动按钮 */
+.batch-tryon-footer {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+}
+
+.batch-tryon-footer span {
+  font-weight: 500;
+  color: #333;
+}
+
+@media (max-width: 768px) {
+  .batch-tryon-footer {
+    left: 16px;
+    right: 16px;
+    transform: none;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .outfit-card-actions {
+    flex-wrap: wrap;
+  }
+}
+
+/* ==========================================================================
    新增：会话列表与对话历史优化
    ========================================================================== */
 
