@@ -28,9 +28,9 @@ def cleanup_sessions_job():
   try:
     count = ConversationManager.cleanup_old_sessions(db, days=3)
     if count > 0:
-      print(f"✅ 清理了 {count} 个过期会话（3天前）")
+      print(f"清理了 {count} 个过期会话（3天前）")
   except Exception as e:
-    print(f"❌ 会话清理失败: {e}")
+    print(f"会话清理失败: {e}")
   finally:
     db.close()
 
@@ -44,8 +44,7 @@ scheduler.add_job(
 )
 scheduler.start()
 
-# 启动时立即执行一次清理（补偿错过的任务）
-print("🔄 启动时执行会话清理...")
+# 启动时执行会话清理
 cleanup_sessions_job()
 
 app = FastAPI(
@@ -63,17 +62,12 @@ app.add_middleware(
   allow_headers=["*"],
 )
 
-# --- 4. 路由导入 (Modified) ---
-# ⚠️ 修改点 1: 这里增加了 vton
 from app.routes import users, clothes, recommendation, vton
 
-# --- 5. 路由注册 (Modified) ---
+# 注册路由
 app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 app.include_router(clothes.router, prefix="/api/v1/clothes", tags=["clothes"])
 app.include_router(recommendation.router, prefix="/api/v1/recommend", tags=["recommendation"])
-
-# ⚠️ 修改点 2: 注册试衣路由
-# 注意：这里我们用了 /api/vton 前缀，对应前端的调用地址
 app.include_router(vton.router, prefix="/api/v1/vton", tags=["Virtual Try-On"])
 # --- 6. 静态文件挂载 ---
 upload_dir = "uploads"

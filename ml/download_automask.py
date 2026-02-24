@@ -10,7 +10,7 @@ DP_DIR = os.path.join(BASE_DIR, "DensePose", "checkpoints")
 os.makedirs(SCHP_DIR, exist_ok=True)
 os.makedirs(DP_DIR, exist_ok=True)
 
-# ⚠️ 注意：这里已经把域名改成 hf-mirror.com 了
+# 注意：这里已经把域名改成 hf-mirror.com 了
 files = [
     # SCHP 模型
     {
@@ -40,15 +40,15 @@ files = [
 
 def download_file(url, filename, desc):
     if os.path.exists(filename):
-        print(f"✅ {desc} 已存在，跳过。")
+        print(f"{desc} 已存在，跳过。")
         return
     
-    print(f"⬇️ 正在下载 {desc}...")
+    print(f"正在下载 {desc}...")
     try:
         # 增加 timeout 设置，防止卡死
         response = requests.get(url, stream=True, timeout=30)
         if response.status_code != 200:
-            print(f"❌ 下载失败 (状态码 {response.status_code}): {url}")
+            print(f"下载失败 (状态码 {response.status_code}): {url}")
             return
             
         total_size = int(response.headers.get('content-length', 0))
@@ -56,12 +56,12 @@ def download_file(url, filename, desc):
             for data in response.iter_content(chunk_size=1024):
                 f.write(data)
                 bar.update(len(data))
-        print(f"✅ {desc} 下载完成！")
+        print(f"{desc} 下载完成！")
     except Exception as e:
-        print(f"💥 网络错误: {e}")
+        print(f"网络错误: {e}")
 
 if __name__ == "__main__":
-    print(f"🚀 开始通过国内镜像下载辅助模型...")
+    print(f"开始通过国内镜像下载辅助模型...")
     for file in files:
         download_file(file["url"], file["path"], file["name"])
-    print("🎉 下载脚本运行结束！")
+    print("下载脚本运行结束！")

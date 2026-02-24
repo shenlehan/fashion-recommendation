@@ -1,6 +1,6 @@
 # AutoDL 快速启动指南 (3分钟部署)
 
-## 📋 前置要求
+## 前置要求
 
 **推荐配置:**
 - GPU: RTX 4090 (24GB) / A100 (40GB+)
@@ -10,9 +10,9 @@
 
 ---
 
-## 🚀 三步启动
+## 三步启动
 
-### 1️⃣ 上传代码到 AutoDL 实例
+### 步骤1: 上传代码到 AutoDL 实例
 
 ```bash
 # 在 AutoDL JupyterLab Terminal 或 SSH 中执行
@@ -25,7 +25,7 @@ unzip fashion-recommendation.zip
 # git clone <你的仓库> fashion-recommendation
 ```
 
-### 2️⃣ 一键安装环境
+### 步骤2: 一键安装环境
 
 ```bash
 cd /root/autodl-tmp/fashion-recommendation/scripts/deployment
@@ -33,16 +33,16 @@ bash autodl_install.sh
 ```
 
 **安装内容:**
-- ✅ 创建 `pytorch` 和 `catvton` 两个 Conda 环境
-- ✅ 安装 PyTorch 2.4.0 + CUDA 12.1
-- ✅ 安装后端依赖 (FastAPI, Qwen-VL)
-- ✅ 安装前端依赖 (React, Vite)
-- ✅ 安装 VTON 服务依赖 (CatVTON, Diffusers, Detectron2)
-- ✅ 初始化数据库
+- 创建 `pytorch` 和 `catvton` 两个 Conda 环境
+- 安装 PyTorch 2.4.0 + CUDA 12.1
+- 安装后端依赖 (FastAPI, Qwen-VL)
+- 安装前端依赖 (React, Vite)
+- 安装 VTON 服务依赖 (CatVTON, Diffusers, Detectron2)
+- 初始化数据库
 
 **预计耗时:** 5-10 分钟
 
-### 3️⃣ 启动服务
+### 步骤3: 启动服务
 
 ```bash
 cd /root/autodl-tmp/fashion-recommendation
@@ -50,13 +50,13 @@ bash start.sh
 ```
 
 **启动的服务:**
-- 🎨 VTON AI Server (端口 8001) - 虚拟试衣
-- 🚀 Backend API (端口 6008) - FastAPI + Qwen3-VL
-- 💻 Frontend (端口 6006) - React 界面
+- VTON AI Server (端口 8001) - 虚拟试衣
+- Backend API (端口 6008) - FastAPI + Qwen3-VL
+- Frontend (端口 6006) - React 界面
 
 ---
 
-## 🌐 访问应用
+## 访问应用
 
 启动成功后,在浏览器访问:
 
@@ -75,7 +75,7 @@ http://你的AutoDL实例IP:6008/docs
 
 ---
 
-## 🔍 检查环境
+## 检查环境
 
 在安装前或出现问题时,运行环境检查:
 
@@ -85,7 +85,7 @@ bash scripts/utils/check_env.sh
 
 ---
 
-## 📊 查看日志
+## 查看日志
 
 ```bash
 # 实时查看所有服务日志
@@ -99,7 +99,7 @@ tail -f logs/frontend.log  # 前端日志
 
 ---
 
-## 🛑 停止服务
+## 停止服务
 
 ```bash
 bash stop.sh
@@ -107,7 +107,7 @@ bash stop.sh
 
 ---
 
-## ⚙️ 手动启动 (如果自动脚本失败)
+## 手动启动 (如果自动脚本失败)
 
 ### 后端 (端口 6008)
 ```bash
@@ -134,7 +134,7 @@ npm run dev
 
 ---
 
-## 🐛 常见问题
+## 常见问题
 
 ### 1. 端口被占用
 
@@ -185,7 +185,7 @@ cat /root/autodl-tmp/fashion-recommendation/frontend/.env
 
 ---
 
-## 📦 模型自动下载说明
+## 模型自动下载说明
 
 **首次运行时会自动下载:**
 - Qwen3-VL (约 16GB) - 首次上传图片时下载
@@ -197,7 +197,7 @@ cat /root/autodl-tmp/fashion-recommendation/frontend/.env
 
 ---
 
-## 💡 性能优化建议
+## 性能优化建议
 
 ### 1. 保存自定义镜像
 环境配置完成后,在 AutoDL 控制台保存自定义镜像,下次直接使用无需重复安装。
@@ -210,7 +210,7 @@ cat /root/autodl-tmp/fashion-recommendation/frontend/.env
 
 ---
 
-## 🎯 功能测试
+## 功能测试
 
 ### 1. 测试后端健康检查
 ```bash
@@ -229,7 +229,7 @@ curl -X POST http://localhost:8001/process_tryon
 
 ---
 
-## 📞 故障排查流程
+## 故障排查流程
 
 1. **运行环境检查**
    ```bash
@@ -260,13 +260,13 @@ curl -X POST http://localhost:8001/process_tryon
 
 ---
 
-## 📚 更多文档
+## 更多文档
 
 详细部署文档: [AUTODL_SETUP.md](./AUTODL_SETUP.md)
 
 ---
 
-## ✅ 快速检查清单
+## 快速检查清单
 
 - [ ] AutoDL 实例已启动 (GPU: 24GB+, 内存: 30GB+)
 - [ ] 代码已上传到 `/root/autodl-tmp/fashion-recommendation`
@@ -276,4 +276,4 @@ curl -X POST http://localhost:8001/process_tryon
 - [ ] 后端健康检查通过 `curl http://localhost:6008/health`
 - [ ] GPU 可用 `nvidia-smi` 有输出
 
-全部打勾即可正常使用! 🎉
+全部打勾即可正常使用!

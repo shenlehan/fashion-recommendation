@@ -20,4 +20,4 @@ def init_db():
   """初始化数据库：创建所有表"""
   from app.models import user, wardrobe, conversation
   Base.metadata.create_all(bind=engine)
-  print("✅ 数据库表初始化完成")
+  print("数据库表初始化完成")

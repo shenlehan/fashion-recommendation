@@ -44,7 +44,6 @@ def login_user(credentials: UserLogin, db: Session = Depends(get_db)):
   if not user:
     raise HTTPException(status_code=404, detail="用户不存在")
 
-  # Note: Password is stored as plaintext (security issue)
   if user.hashed_password != credentials.password:
     raise HTTPException(status_code=401, detail="密码错误")
 
@@ -122,8 +121,7 @@ async def update_user_profile(
       try:
         os.remove(old_photo_path)
       except Exception as e:
-        # 旧照片删除失败不影响主流程，只记录警告
-        print(f"警告：删除旧照片失败 {old_photo_path}: {e}")
+        print(f"删除旧照片失败 {old_photo_path}: {e}")
     
     user.profile_photo = new_filename
   

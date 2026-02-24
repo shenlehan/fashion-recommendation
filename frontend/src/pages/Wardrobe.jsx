@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { flushSync } from "react-dom";
-import { getUserWardrobe, uploadClothingItem, uploadClothingBatch, deleteClothingItem, deleteClothingBatch, getUploadStatus, API_ORIGIN } from "../services/api";
+import { getUserWardrobe, uploadClothingItem, uploadClothingBatch, deleteClothingItem, deleteClothingBatch, getUploadStatus, virtualTryOn, fetchImageAsBlob, getUserProfile, API_ORIGIN } from "../services/api";
 import "./Wardrobe.css";
 
 // ===== 中英文映射字典 =====
@@ -55,6 +55,14 @@ function Wardrobe({ user, setGlobalUpload, isUploading, abortControllerRef, isAb
   const uploadedIdsRef = useRef([]); // 使用ref实时记录已上传ID，避免状态更新延迟
   const isUploadingGlobalRef = useRef(false); // 全局上传状态标记，防止重复上传
 
+  // 虚拟试衣相关状态
+  const [isTryingOn, setIsTryingOn] = useState(false);
+  const [activeTryOnButton, setActiveTryOnButton] = useState(null); // 记录正在生成的按钮ID
+  const [tryOnResult, setTryOnResult] = useState(null);
+  const [personImage, setPersonImage] = useState(null);
+  const [personPreview, setPersonPreview] = useState(null);
+  const [hasProfilePhoto, setHasProfilePhoto] = useState(false);
+
   // 监听error变化，5秒后自动清除
   useEffect(() => {
     if (error) {
@@ -87,7 +95,23 @@ function Wardrobe({ user, setGlobalUpload, isUploading, abortControllerRef, isAb
 useEffect(() => {
     fetchWardrobe();
     checkUploadStatus(); // 检查是否有进行中的上传任务
+    loadUserProfilePhoto(); // 加载用户照片
   }, [user.id]);
+
+  const loadUserProfilePhoto = async () => {
+    try {
+      const profile = await getUserProfile(user.id);
+      if (profile.profile_photo) {
+        const photoUrl = `${API_ORIGIN}/uploads/${profile.profile_photo}`;
+        setPersonPreview(photoUrl);
+        setHasProfilePhoto(true);
+      } else {
+        setHasProfilePhoto(false);
+      }
+    } catch (err) {
+      // 静默失败，不影响页面使用
+    }
+  };
 
   const checkUploadStatus = async () => {
     try {
@@ -471,6 +495,50 @@ useEffect(() => {
     return itemId ? `${baseUrl}?id=${itemId}` : baseUrl;
   };
 
+  // 虚拟试衣功能
+  const handleTryOn = async (item) => {
+    if (!personPreview) {
+      setError(hasProfilePhoto 
+        ? '未加载个人照片，请刷新页面' 
+        : '请先去个人资料页面上传一张正面照'
+      );
+      return;
+    }
+  
+    let personBlob = personImage;
+    if (!personImage && personPreview) {
+      try {
+        const response = await fetch(personPreview, {
+          mode: 'cors',
+          cache: 'no-cache'
+        });
+        if (!response.ok) {
+          throw new Error(`照片加载失败: ${response.status}`);
+        }
+        personBlob = await response.blob();
+      } catch (err) {
+        setError('加载个人照片失败，请重新上传');
+        return;
+      }
+    }
+  
+    try {
+      setIsTryingOn(true);
+      setActiveTryOnButton(item.id); // 设置当前按钮ID
+      setError('');
+        
+      const clothBlob = await fetchImageAsBlob(getImageUrl(item.image_path, item.id));
+      const resultBlob = await virtualTryOn(personBlob, clothBlob, 'upper_body');
+      const resultUrl = URL.createObjectURL(resultBlob);
+      setTryOnResult(resultUrl);
+    } catch (err) {
+      setError('虚拟试衣请求失败，请确俚AI后端服务已启动。');
+    } finally {
+      setIsTryingOn(false);
+      setActiveTryOnButton(null); // 清除按钮ID
+    }
+  };
+
   return (
     <div className="wardrobe-container">
       <div className="wardrobe-header">
@@ -521,6 +589,23 @@ useEffect(() => {
       </div>
 
       {error && <div className="error-message">{error}</div>}
+
+      {/* 虚拟试衣结果弹窗 */}
+      {tryOnResult && (
+        <div className="vton-modal-overlay" onClick={() => setTryOnResult(null)}>
+          <div className="vton-modal-content" onClick={e => e.stopPropagation()}>
+            <button className="close-modal" onClick={() => setTryOnResult(null)}>&times;</button>
+            <h2>虚拟试衣效果</h2>
+            <div className="vton-result-container">
+              <img src={tryOnResult} alt="虚拟试衣效果" />
+            </div>
+            <div className="modal-footer">
+              <p>由 CatVTON 图像生成技术驱动</p>
+              <button className="btn-primary" onClick={() => window.open(tryOnResult)}>保存图片</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showDeleteConfirm && (
         <div className="modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
@@ -656,14 +741,33 @@ useEffect(() => {
                           {item.season && <span className="badge season">{translateSeasons(item.season)}</span>}
                           {item.material && <span className="badge material">{item.material}</span>}
                         </div>
-                        {!isSelectionMode && (
-                          <button
-                            className="btn-delete"
-                            onClick={() => handleDelete(item.id)}
-                          >
-                            删除
-                          </button>
-                        )}
+                        <div className="item-actions">
+                          {!isSelectionMode && (
+                            <>
+                              {!['shoes', 'socks', 'accessories', 'underwear'].includes(item.category) && (
+                                <button
+                                  className="btn-try-on"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleTryOn(item);
+                                  }}
+                                  disabled={isTryingOn}
+                                >
+                                  {activeTryOnButton === item.id ? '生成中...' : '试穿'}
+                                </button>
+                              )}
+                              <button
+                                className="btn-delete"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(item.id);
+                                }}
+                              >
+                                删除
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}

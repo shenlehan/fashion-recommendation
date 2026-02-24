@@ -87,6 +87,7 @@ function Conversation({ user, isUploading }) {
   const [hasProfilePhoto, setHasProfilePhoto] = useState(false);
   const [tryOnResult, setTryOnResult] = useState(null);
   const [isTryingOn, setIsTryingOn] = useState(false);
+  const [activeTryOnButton, setActiveTryOnButton] = useState(null); // 记录正在生成的按钮ID
 
   // 删除确认模态框
   const [deleteConfirmModal, setDeleteConfirmModal] = useState({
@@ -146,7 +147,7 @@ function Conversation({ user, isUploading }) {
 
   // 初始化:加载会话列表和用户照片
   useEffect(() => {
-    // 首次初始化加载会话列表和用户照照
+    // 首次初始化加载会话列表和用户照片
     if (!isInitializedRef.current) {
       loadSessions();
       loadUserProfilePhoto();
@@ -258,7 +259,7 @@ function Conversation({ user, isUploading }) {
   };
 
   // --- 批量试穿逻辑 ---
-  const handleBatchTryOn = async (items) => {
+  const handleBatchTryOn = async (items, messageIndex) => {
     if (!personPreview) {
       alert(hasProfilePhoto 
         ? '未加载个人照片,请刷新页面' 
@@ -266,7 +267,7 @@ function Conversation({ user, isUploading }) {
       );
       return;
     }
-
+  
     let personBlob = personImage;
     if (!personImage && personPreview) {
       try {
@@ -278,11 +279,12 @@ function Conversation({ user, isUploading }) {
         return;
       }
     }
-
+  
     try {
       setIsTryingOn(true);
+      setActiveTryOnButton(`batch-${messageIndex}`); // 设置当前按钮ID
       setError('');
-      
+        
       const resultBlob = await batchVirtualTryOn(personBlob, items, getImageUrl);
       const resultUrl = URL.createObjectURL(resultBlob);
       setTryOnResult(resultUrl);
@@ -290,6 +292,7 @@ function Conversation({ user, isUploading }) {
       setError(err.message || '批量试穿失败,请确保AI后端服务已启动');
     } finally {
       setIsTryingOn(false);
+      setActiveTryOnButton(null); // 清除按钮ID
     }
   };
 
@@ -852,12 +855,12 @@ function Conversation({ user, isUploading }) {
                                   className="btn-batch-tryon-mini"
                                   onClick={() => {
                                     const items = msg.outfit_ids.map(id => itemsMap[id]).filter(Boolean);
-                                    handleBatchTryOn(items);
+                                    handleBatchTryOn(items, index);
                                   }}
                                   disabled={isTryingOn}
                                   title="一键试穿这组搭配的所有衣物"
                                 >
-                                  {isTryingOn ? '生成中...' : '整套试穿'}
+                                  {activeTryOnButton === `batch-${index}` ? '生成中...' : '整套试穿'}
                                 </button>
                               </div>
                               {msg.outfit_ids.map((itemId) => {
@@ -867,21 +870,11 @@ function Conversation({ user, isUploading }) {
                                 return (
                                   <div key={itemId} className="history-outfit-item">
                                     {item.image_path ? (
-                                      <>
-                                        <img
-                                          src={getImageUrl(item.image_path)}
-                                          alt={item.name}
-                                          title={item.name}
-                                        />
-                                        <button
-                                          className="try-on-mini-btn"
-                                          onClick={() => handleTryOn(item)}
-                                          disabled={isTryingOn}
-                                          title="试穿"
-                                        >
-                                          试穿
-                                        </button>
-                                      </>
+                                      <img
+                                        src={getImageUrl(item.image_path)}
+                                        alt={item.name}
+                                        title={item.name}
+                                      />
                                     ) : (
                                       <div className="no-image-tiny">
                                         {translateCategory(item.category)}

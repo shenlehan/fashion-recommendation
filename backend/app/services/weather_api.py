@@ -464,7 +464,7 @@ def get_weather_by_city(city: str) -> Dict[str, Any]:
     except Exception:
       pass
   else:
-    # 降级：使用内存缓存
+    # 使用内存缓存
     current_time = time.time()
     if city in _memory_cache:
       cached_data = _memory_cache[city]
@@ -484,14 +484,14 @@ def get_weather_by_city(city: str) -> Dict[str, Any]:
       except Exception:
         pass
     else:
-      # 降级：存入内存缓存
+      # 存入内存缓存
       _memory_cache[city] = {
         'data': weather,
         'expires_at': time.time() + CACHE_DURATION
       }
     return weather
   
-  # 降级：返回mock数据
+  # 返回mock数据
   return {
     "temp_max": 25,
     "temp_min": 15,
@@ -511,7 +511,7 @@ def _get_openweather(city: str) -> Optional[Dict[str, Any]]:
   """
   api_key = settings.OPENWEATHER_API_KEY
   if not api_key:
-    print(f"⚠️  OpenWeather API KEY未配置")
+    print(f"OpenWeather API KEY未配置")
     return None
   
   try:
@@ -527,14 +527,14 @@ def _get_openweather(city: str) -> Optional[Dict[str, Any]]:
     response = requests.get(url, params=params, timeout=5)
     data = response.json()
     
-    if data.get("cod") != "200":  # 注意：forecast API返回字符串"200"
-      print(f"❌ OpenWeather Forecast API返回错误: {data.get('cod')}, message={data.get('message')}, city={city}")
+    if data.get("cod") != "200":
+      print(f"OpenWeather Forecast API返回错误: {data.get('cod')}, message={data.get('message')}, city={city}")
       return None
     
     # 从预报数据中筛选当日数据（更准确）
     forecast_list = data.get("list", [])
     if not forecast_list:
-      print(f"⚠️  无预报数据: {city}")
+      print(f"无预报数据: {city}")
       return None
     
     # 获取当日日期（本地时区）
@@ -551,8 +551,8 @@ def _get_openweather(city: str) -> Optional[Dict[str, Any]]:
     
     # 如果没有当日数据，使用未来24小时
     if not today_forecast:
-      today_forecast = forecast_list[:8]  # 降级为24小时
-      print(f"⚠️  无当日数据，使用24小时预报: {city}")
+      today_forecast = forecast_list[:8]
+      print(f"无当日数据，使甤24小时预报: {city}")
     
     # 提取所有温度值（使用筛选后的当日数据）
     temps = [item["main"]["temp"] for item in today_forecast]
@@ -708,7 +708,7 @@ def _get_openweather(city: str) -> Optional[Dict[str, Any]]:
         # 合并到condition，格式："多云转晴"
         condition = f"{start_cn}转{end_cn}"
     
-    print(f"✅ 获取到 {city} 天气预报: {temp_min}~{temp_max}°C {condition}, 湿度{avg_humidity}%, 风速{avg_wind_speed}m/s, 降水概率{max_rain_prob}%")
+    print(f"获取到 {city} 天气预报: {temp_min}~{temp_max}°C {condition}, 湿度{avg_humidity}%, 风速{avg_wind_speed}m/s, 降水概率{max_rain_prob}%")
     
     return {
       "temp_max": temp_max,
@@ -720,7 +720,7 @@ def _get_openweather(city: str) -> Optional[Dict[str, Any]]:
     }
     
   except Exception as e:
-    print(f"❌ OpenWeather Forecast API调用异常: {e}")
+    print(f"OpenWeather Forecast API调用异常: {e}")
     import traceback
     traceback.print_exc()
     return None

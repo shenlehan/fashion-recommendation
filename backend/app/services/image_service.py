@@ -18,14 +18,14 @@ def analyze_clothing_image(image_path: str) -> Dict[str, Any]:
     if result.get("material") == "棉":
       result["material"] = "棉质"
     
-    print(f"\n✅ 分析成功: {result}")
+    print(f"\n分析成功: {result}")
     print(f"{'='*60}\n")
     return result
     
   except Exception as e:
     error_type = type(e).__name__
     print(f"\n{'='*60}")
-    print(f"❌ ML 推理失败")
+    print(f"ML 推理失败")
     print(f"{'='*60}")
     print(f"错误类型: {error_type}")
     print(f"错误信息: {str(e)}")
@@ -33,7 +33,7 @@ def analyze_clothing_image(image_path: str) -> Dict[str, Any]:
     print(traceback.format_exc())
     print(f"{'='*60}\n")
     
-    print("⚠️  返回默认值，所有衣服将显示相同标签")
+    print("返回默认值，所有衣服将显示相同标签")
     return {
       "category": "top",
       "color": "blue",

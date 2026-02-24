@@ -160,8 +160,18 @@ function Recommendations({ user, isUploading }) {
   const [savedPreferences, setSavedPreferences] = useState(() => getStoredState('savedPreferences', null));
   const [sessionId, setSessionId] = useState(() => {
     try {
+      // 优先从 shared_sessionId 恢复（直接返回字符串，不需要 JSON.parse）
       const stored = localStorage.getItem(`shared_${user.id}_sessionId`);
-      return stored ? JSON.parse(stored) : null;
+      if (stored) {
+        return stored;
+      }
+      // 如果没有，尝试从 recommendations 中提取
+      const storedRecs = localStorage.getItem(`recommendations_${user.id}_recommendations`);
+      if (storedRecs) {
+        const recs = JSON.parse(storedRecs);
+        return recs?.session_id || null;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -174,13 +184,10 @@ function Recommendations({ user, isUploading }) {
   const [hasProfilePhoto, setHasProfilePhoto] = useState(false);
   const [tryOnResult, setTryOnResult] = useState(null);
   const [isTryingOn, setIsTryingOn] = useState(false);
+  const [activeTryOnButton, setActiveTryOnButton] = useState(null); // 记录正在生成的按钮ID
   
   // 重置按钮防抖状态
   const [isResetting, setIsResetting] = useState(false);
-
-  // 批量选择相关状态
-  const [batchSelectMode, setBatchSelectMode] = useState(false);
-  const [selectedItems, setSelectedItems] = useState([]);
 
   // 持久化状态
   useEffect(() => {
@@ -257,7 +264,7 @@ function Recommendations({ user, isUploading }) {
     }
   };
 
-  // --- ⚠️ 新增：处理人像上传 ---
+  // 处理人像上传
   const handlePersonChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -266,7 +273,7 @@ function Recommendations({ user, isUploading }) {
     }
   };
 
-  // --- ⚠️ 新增：核心试衣逻辑 ---
+  // 核心试衣逻辑
   const handleTryOn = async (item) => {
     if (!personPreview) {
       alert(hasProfilePhoto 
@@ -315,7 +322,7 @@ function Recommendations({ user, isUploading }) {
   };
 
   // --- 批量试穿逻辑 ---
-  const handleBatchTryOn = async (items) => {
+  const handleBatchTryOn = async (items, outfitIndex) => {
     if (!personPreview) {
       alert(hasProfilePhoto 
         ? '未加载个人照片，请刷新页面' 
@@ -323,7 +330,7 @@ function Recommendations({ user, isUploading }) {
       );
       return;
     }
-
+  
     let personBlob = personImage;
     if (!personImage && personPreview) {
       try {
@@ -335,37 +342,21 @@ function Recommendations({ user, isUploading }) {
         return;
       }
     }
-
+  
     try {
       setIsTryingOn(true);
+      setActiveTryOnButton(`batch-${outfitIndex}`); // 设置当前按钮ID
       setError('');
-      
+        
       const resultBlob = await batchVirtualTryOn(personBlob, items, getImageUrl);
       const resultUrl = URL.createObjectURL(resultBlob);
       setTryOnResult(resultUrl);
     } catch (err) {
-      setError(err.message || '批量试穿失败，请确保AI后端服务已启动');
+      setError(err.message || '批量试穿失败，请确俚AI后端服务已启动');
     } finally {
       setIsTryingOn(false);
+      setActiveTryOnButton(null); // 清除按钮ID
     }
-  };
-
-  // --- 切换批量选择模式 ---
-  const toggleBatchSelectMode = () => {
-    setBatchSelectMode(!batchSelectMode);
-    setSelectedItems([]);
-  };
-
-  // --- 切换单件选中状态 ---
-  const toggleItemSelection = (item) => {
-    setSelectedItems(prev => {
-      const exists = prev.find(i => i.id === item.id);
-      if (exists) {
-        return prev.filter(i => i.id !== item.id);
-      } else {
-        return [...prev, item];
-      }
-    });
   };
 
   // --- 原有推荐获取逻辑 ---
@@ -437,7 +428,7 @@ function Recommendations({ user, isUploading }) {
       const result = await selectOutfit(sessionId, outfitIndex, outfit, user.id);
         
       setSelectedOutfitIndex(outfitIndex);
-      setError(`✅ ${result.message}`);
+      setError(`${result.message}`);
         
       // 清理之前的定时器
       if (successMessageTimerRef.current) {
@@ -496,15 +487,6 @@ function Recommendations({ user, isUploading }) {
       <div className="recommendations-header">
         <h1>穿搭推荐</h1>
         <div className="header-actions">
-          {recommendations && (
-            <button
-              className={`btn-batch-mode ${batchSelectMode ? 'active' : ''}`}
-              onClick={toggleBatchSelectMode}
-              disabled={loading || isTryingOn}
-            >
-              {batchSelectMode ? '退出选择' : '批量选择'}
-            </button>
-          )}
           {!showPreferences && (
             <button
               className="btn-secondary"
@@ -708,11 +690,11 @@ function Recommendations({ user, isUploading }) {
                         <div className="outfit-card-actions">
                           <button
                             className="btn-batch-tryon"
-                            onClick={() => handleBatchTryOn(outfit.items)}
+                            onClick={() => handleBatchTryOn(outfit.items, index)}
                             disabled={isTryingOn}
                             title="一键试穿这套搭配的所有衣物"
                           >
-                            {isTryingOn ? '生成中...' : '整套试穿'}
+                            {activeTryOnButton === `batch-${index}` ? '生成中...' : '整套试穿'}
                           </button>
                           {sessionId && (
                             <button
@@ -728,30 +710,10 @@ function Recommendations({ user, isUploading }) {
                       </div>
                       <div className="outfit-items">
                         {outfit.items?.map((item, itemIndex) => (
-                          <div key={itemIndex} className={`outfit-item ${batchSelectMode && selectedItems.find(i => i.id === item.id) ? 'selected' : ''}`}>
-                            {batchSelectMode && !['shoes', 'socks', 'accessories', 'underwear'].includes(item.category) && (
-                              <input
-                                type="checkbox"
-                                className="outfit-item-checkbox"
-                                checked={!!selectedItems.find(i => i.id === item.id)}
-                                onChange={() => toggleItemSelection(item)}
-                              />
-                            )}
+                          <div key={itemIndex} className="outfit-item">
                             <div className="outfit-item-image">
                               {item.image_path ? (
-                                <>
-                                  <img src={getImageUrl(item.image_path)} alt={item.name} />
-                                  {!batchSelectMode && (
-                                    <button 
-                                      className="try-on-overlay-btn"
-                                      onClick={() => handleTryOn(item)}
-                                      disabled={isTryingOn}
-                                      title="在您的人像上预览这件衣服"
-                                    >
-                                      {isTryingOn ? '生成中...' : '一键试穿'}
-                                    </button>
-                                  )}
-                                </>
+                                <img src={getImageUrl(item.image_path)} alt={item.name} />
                               ) : (
                                 <div className="no-image-small">{translateCategory(item.category)}</div>
                               )}
@@ -799,20 +761,6 @@ function Recommendations({ user, isUploading }) {
               <li>AI 智能搭配</li>
             </ul>
           </div>
-        </div>
-      )}
-
-      {/* 批量选择模式下的浮动按钮 */}
-      {batchSelectMode && selectedItems.length > 0 && (
-        <div className="batch-tryon-footer">
-          <span>已选择 {selectedItems.length} 件衣物</span>
-          <button
-            className="btn-primary"
-            onClick={() => handleBatchTryOn(selectedItems)}
-            disabled={isTryingOn}
-          >
-            {isTryingOn ? '生成中...' : `试穿选中的 ${selectedItems.length} 件`}
-          </button>
         </div>
       )}
     </div>
