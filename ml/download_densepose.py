@@ -13,8 +13,8 @@ TARGET_FILE = os.path.join(TARGET_DIR, "model_final_162be9.pkl")
 # =========================================
 
 def download_file(url, dest_path):
-    print(f"🔗 正在连接镜像源: {url}")
-    print(f"📂 目标保存位置: {dest_path}")
+    print(f"正在连接镜像源: {url}")
+    print(f"目标保存位置: {dest_path}")
     
     try:
         # stream=True 允许分块下载大文件
@@ -34,11 +34,11 @@ def download_file(url, dest_path):
             for data in response.iter_content(block_size):
                 size = file.write(data)
                 bar.update(size)
-        print("\n✅ 下载成功！权重文件已就位。")
+        print("\n下载成功！权重文件已就位。")
         return True
         
     except Exception as e:
-        print(f"\n❌ 下载失败: {e}")
+        print(f"\n下载失败: {e}")
         print("建议：如果镜像也被拦截，请尝试在本地下载后通过 FTP/SCP 上传到服务器。")
         return False
 
@@ -49,7 +49,7 @@ if __name__ == "__main__":
     # 2. 检查文件是否已存在
     if os.path.exists(TARGET_FILE):
         file_size = os.path.getsize(TARGET_FILE)
-        print(f"⚠️ 文件已存在 ({file_size / 1024 / 1024:.2f} MB)")
+        print(f"文件已存在 ({file_size / 1024 / 1024:.2f} MB)")
         # 如果文件太小（比如小于 1MB），说明之前下载失败了，删掉重下
         if file_size < 1024 * 1024:
             print("   -> 文件过小，判定为损坏，正在重新下载...")

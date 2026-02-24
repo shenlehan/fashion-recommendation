@@ -2,7 +2,7 @@
 
 基于 AI 的智能穿搭推荐系统，集成 Qwen3-VL 视觉理解和 CatVTON 虚拟试衣功能。
 
-## ⚡ 快速开始
+## 快速开始
 
 ### AutoDL 实例部署 (推荐)
 
@@ -17,9 +17,9 @@ bash start.sh           # 启动所有服务
 ```
 
 **详细文档:**
-- 📘 [AutoDL 快速启动指南](./QUICKSTART_AUTODL.md) - 3分钟部署
-- 📗 [AutoDL 详细部署文档](./AUTODL_SETUP.md) - 完整配置说明
-- 📙 [代码上传指南](./UPLOAD_GUIDE.md) - Windows 到 AutoDL
+- [AutoDL 快速启动指南](./QUICKSTART_AUTODL.md) - 3分钟部署
+- [AutoDL 详细部署文档](./AUTODL_SETUP.md) - 完整配置说明
+- [代码上传指南](./UPLOAD_GUIDE.md) - Windows 到 AutoDL
 
 **Windows 用户快速上传:**
 
@@ -28,7 +28,7 @@ bash start.sh           # 启动所有服务
 
 ---
 
-# 🎯 核心功能
+# 核心功能
 
 1. **智能衣橱管理** - 拍照上传，AI 自动识别分类
 2. **语义搜索** - 「红色连衣裙」「运动风外套」智能检索
@@ -38,26 +38,31 @@ bash start.sh           # 启动所有服务
 
 ---
 
-## 🏗️ 技术架构
+## 技术架构
 
 ### 后端
 - **FastAPI** - 高性能 Web 框架
 - **Qwen3-VL** - 阿里通义千问多模态模型 (8B)
 - **SQLite** - 轻量级数据库
+- **Redis** - 天气数据缓存
+- **OpenWeatherMap API** - 天气数据源
+- **APScheduler** - 定时任务调度
+- **httpx** - 异步HTTP客户端
 
 ### 前端
-- **React 19** - 现代化 UI 框架
+- **React 19.1** - 现代化 UI 框架
 - **Vite** - 极速开发服务器
 - **Axios** - HTTP 客户端
 
 ### AI 服务
-- **CatVTON** - 虚拟试衣 (Diffusion Model)
-- **DensePose** - 人体姿态估计
-- **SCHP** - 人体解析分割
+- **CatVTON** - 虚拟试衣 (Diffusion Model, ICLR 2025)
+- **AutoMasker** - 自动掩码生成 (DensePose + SCHP)
+- **Qwen3-VL** - 衣物识别和推荐生成
+- **RAG检索** - sentence-transformers + CLIP + ChromaDB
 
 ---
 
-## 📦 系统要求
+## 系统要求
 
 ### 最低配置
 - GPU: RTX 4090 (24GB) / A5000 (24GB)
@@ -74,7 +79,7 @@ bash start.sh           # 启动所有服务
 
 ---
 
-## 🚀 本地部署 (非 AutoDL)
+## 本地部署 (非 AutoDL)
 
 ### 1. 克隆项目
 ```bash
@@ -131,7 +136,7 @@ cd frontend && npm run dev
 
 ---
 
-## 🌐 访问应用
+## 访问应用
 
 启动成功后访问:
 
@@ -145,7 +150,7 @@ AutoDL 实例访问:
 
 ---
 
-## 📊 服务端口
+## 服务端口
 
 | 服务 | 端口 | 说明 |
 |------|------|------|
@@ -155,7 +160,7 @@ AutoDL 实例访问:
 
 ---
 
-## 📝 常用命令
+## 常用命令
 
 ```bash
 # 环境检查
@@ -178,7 +183,7 @@ tail -f logs/frontend.log
 
 ---
 
-## 🐛 故障排查
+## 故障排查
 
 ### 端口被占用
 ```bash
@@ -205,7 +210,7 @@ cd ml && python download_model.py
 
 ---
 
-## 📚 项目结构
+## 项目结构
 
 ```
 fashion-recommendation/
@@ -233,7 +238,7 @@ fashion-recommendation/
 
 ---
 
-## 🔧 开发指南
+## 开发指南
 
 ### 添加新的 API 端点
 1. 在 `backend/app/routes/` 创建路由文件
@@ -253,19 +258,19 @@ uvicorn app.main:app --reload  # 开启热重载
 
 ---
 
-## 📄 许可证
+## 许可证
 
 MIT License
 
 ---
 
-## 🤝 贡献
+## 贡献
 
 欢迎提交 Issue 和 Pull Request!
 
 ---
 
-## 📞 支持
+## 支持
 
 遇到问题?
 1. 查看 [AutoDL 部署文档](./AUTODL_SETUP.md)

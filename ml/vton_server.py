@@ -22,9 +22,9 @@ sys.path.append(catvton_path)
 try:
     from model.pipeline import CatVTONPipeline
     from model.cloth_masker import AutoMasker  # 引入最强 Mask 工具
-    print("✅ 成功导入 CatVTONPipeline 和 AutoMasker")
+    print("成功导入 CatVTONPipeline 和 AutoMasker")
 except ImportError as e:
-    print(f"❌ 导入失败: {e}")
+    print(f"导入失败: {e}")
     sys.exit(1)
 
 # --- 全局变量 ---
@@ -69,7 +69,7 @@ def resize_and_padding(image, target_size):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global pipeline, automasker, upscaler
-    print("🚀 正在初始化 CatVTON 服务器...")
+    print("正在初始化 CatVTON 服务器...")
     try:
         # 1. 加载 Inpainting 模型
         print("Loading CatVTON Pipeline...")
@@ -92,13 +92,13 @@ async def lifespan(app: FastAPI):
         )
 
         # 3. (可选) 加载放大模型
-        # 注意：Paste Back 技术通常比 Upscaler 更有效且省显存，这里先保留但设为可选
+        # Paste Back技术通常比Upscaler更有效且省显存，这里先保留但设为可选
         # print("Loading Upscaler...")
         # upscaler = StableDiffusionLatentUpscalePipeline.from_pretrained(...)
         
-        print("✨ 服务启动成功！端口: 8001")
+        print("服务启动成功！端口: 8001")
     except Exception as e:
-        print(f"💥 模型加载崩溃: {e}")
+        print(f"模型加载崩溃: {e}")
         import traceback
         traceback.print_exc()
     yield
@@ -136,7 +136,7 @@ async def process_tryon(
         person_resized.save(os.path.join(debug_dir, "input_person.png"))
 
         # 3. 自动生成高质量 Mask
-        print("🔍 Generating Mask...")
+        print("Generating Mask...")
         mask_result = automasker(person_resized, mask_type='upper')
         mask = mask_result['mask'] # 这是一个 PIL Image
         
@@ -147,7 +147,7 @@ async def process_tryon(
         mask_blurred = mask.filter(ImageFilter.GaussianBlur(radius=5))
 
         # 5. 模型推理
-        print("🎨 Diffusion Inference...")
+        print("模型推理中...")
         generator = torch.Generator(device=device).manual_seed(42)
         result_image = pipeline(
             image=person_resized,
@@ -164,7 +164,7 @@ async def process_tryon(
         # 6. [核心技术] Paste Back (回贴)
         # 将生成的衣服融合回原图 (person_resized)，只保留衣服区域
         # 这样脸部和背景就绝对不会变糊
-        print("🔧 Pasting Back...")
+        print("Pasting Back...")
         
         # 重新调整 mask 大小用于合成 (mask 也是 768x1024，不用动)
         mask_for_composite = mask.convert("L")
@@ -224,7 +224,7 @@ async def batch_tryon(
         
         # 5. 顺序推理
         for i, (category, cloth_raw) in enumerate(items):
-            print(f"🔄 试穿第 {i+1}/{len(items)} 件: {category}")
+            print(f"试穿第 {i+1}/{len(items)} 件: {category}")
             
             mask_type = CATEGORY_TO_MASK_TYPE.get(category, 'upper')
             cloth_resized, _ = resize_and_padding(cloth_raw, target_size)
@@ -233,14 +233,14 @@ async def batch_tryon(
             cloth_resized.save(os.path.join(debug_dir, f"cloth_{i+1}_{category}.png"))
             
             # 生成 mask
-            print(f"🔍 生成 mask (type={mask_type})...")
+            print(f"生成 mask (type={mask_type})...")
             mask_result = automasker(current_person, mask_type=mask_type)
             mask = mask_result['mask']
             mask.save(os.path.join(debug_dir, f"mask_{i+1}_{category}.png"))
             mask_blurred = mask.filter(ImageFilter.GaussianBlur(radius=5))
             
             # 推理
-            print(f"🎨 Diffusion 推理中...")
+            print(f"模型推理中...")
             generator = torch.Generator(device=device).manual_seed(42)
             result_image = pipeline(
                 image=current_person,
@@ -257,10 +257,10 @@ async def batch_tryon(
             
             # 保存中间结果
             current_person.save(os.path.join(debug_dir, f"step_{i+1}_{category}.png"))
-            print(f"✅ 第 {i+1} 件完成")
+            print(f"第 {i+1} 件完成")
         
         # 6. 返回最终结果
-        print(f"🎉 批量试穿完成！共 {len(items)} 件")
+        print(f"批量试穿完成！共 {len(items)} 件")
         img_byte_arr = io.BytesIO()
         current_person.save(img_byte_arr, format='PNG')
         return Response(content=img_byte_arr.getvalue(), media_type="image/png")

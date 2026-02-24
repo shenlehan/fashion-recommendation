@@ -19,12 +19,12 @@ def generate_outfit_recommendations(
   except ImportError:
     return {
       "outfits": [
-        {"items": [1, 2], "reason": "Mock 推荐：适合当前天气"},
+        {"items": [1, 2], "reason": "适合当前天气"},
       ],
       "missing_items": ["thick jacket"]
     }
   except Exception as e:
-    print(f"❌ Error in recommendation service: {e}")
+    print(f"Error in recommendation service: {e}")
     import traceback
     traceback.print_exc()
     return {
@@ -67,7 +67,7 @@ def adjust_outfit_with_conversation(
       user_profile, wardrobe_items, weather, preferences
     )
   except Exception as e:
-    print(f"❌ Error in adjustment service: {e}")
+    print(f"Error in adjustment service: {e}")
     import traceback
     traceback.print_exc()
     return {

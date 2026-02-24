@@ -40,7 +40,7 @@ class UploadTaskManager:
                 for task in self._tasks.values()
             )
             if existing_active:
-                print(f"[UploadManager] 警告: 用户{user_id}已有上传任务进行中，新任务{task_id}将并发执行")
+                print(f"[UploadManager] 用户{user_id}已有上传任务进行中，新任务{task_id}将并发执行")
             
             task = UploadTask(
                 task_id=task_id,

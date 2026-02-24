@@ -639,7 +639,7 @@ JSON:
           if isinstance(idx, int) and 1 <= idx <= len(wardrobe_items):
             outfit_items.append(wardrobe_items[idx - 1])
         
-        # ✅ 关键修复：验证并修复缺失的必需品类
+        # 验证并修复缺失的必需品类
         outfit_items = self._ensure_required_categories(
           outfit_items, current_outfit, wardrobe_items
         )

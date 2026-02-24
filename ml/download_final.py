@@ -5,7 +5,7 @@ from huggingface_hub import hf_hub_download
 # 1. 强制使用国内镜像
 os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
 
-print("🚀 开始尝试通过 huggingface_hub 下载...")
+print("开始尝试通过 huggingface_hub 下载...")
 
 try:
     # 2. 定义目标路径

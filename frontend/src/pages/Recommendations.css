@@ -483,7 +483,7 @@
   padding: 8px 16px;
   font-size: 13px;
   font-weight: 600;
-  background: linear-gradient(135deg, var(--primary-color) 0%, #7c3aed 100%);
+  background-color: var(--primary-color);
   color: white;
   border: none;
   border-radius: 8px;
@@ -493,6 +493,7 @@
 }
 
 .btn-select-outfit:hover {
+  background-color: var(--primary-hover);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.4);
 }
@@ -517,6 +518,7 @@
    6. 单体衣物与试衣按钮 (修改：实现悬浮触发)
    ========================================================================== */
 .outfit-item {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -599,13 +601,15 @@
 
 .vton-modal-content {
   background: var(--surface);
-  padding: 40px;
-  border-radius: 24px;
-  max-width: 500px;
-  width: 90%;
+  padding: 2.5%;
+  border-radius: 4%;
+  width: 50vw;
+  height: 90vh;
   position: relative;
   text-align: center;
   animation: modalFadeIn 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes modalFadeIn {
@@ -613,25 +617,71 @@
   to { transform: translateY(0); opacity: 1; }
 }
 
+.vton-modal-content h2 {
+  font-size: 3vh;
+  margin: 0 0 1.5vh 0;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
 .vton-result-container {
-  margin: 24px 0;
-  border-radius: 16px;
+  flex: 1;
+  margin: 1.5vh auto;
+  border-radius: 2.5%;
   overflow: hidden;
-  background: #f0f0f0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 3 / 4;
+  max-width: 500px;
+  width: 100%;
+  max-height: none;
 }
 
 .vton-result-container img {
   width: 100%;
+  height: 100%;
+  object-fit: contain;
   display: block;
+}
+
+.modal-footer {
+  margin-top: 1.5vh;
+  flex-shrink: 0;
+}
+
+.modal-footer p {
+  font-size: 1.8vh;
+  color: var(--text-secondary);
+  margin: 0 0 1.2vh 0;
+}
+
+.modal-footer .btn-primary {
+  padding: 1.2vh 3%;
+  font-size: 2vh;
 }
 
 .close-modal {
   position: absolute;
-  top: 20px; right: 20px;
-  font-size: 32px;
+  top: 1.5vh; right: 1.5vh;
+  font-size: 4vh;
   background: none; border: none;
   color: var(--text-secondary);
   cursor: pointer;
+  line-height: 1;
+  width: 5vh;
+  height: 5vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.close-modal:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-primary);
 }
 
 /* ==========================================================================
@@ -753,31 +803,34 @@
 
 /* 整套试穿按钮 */
 .btn-batch-tryon {
-  padding: 6px 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 8px 16px;
+  background-color: var(--primary-color);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.3);
 }
 
 .btn-batch-tryon:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  background-color: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.4);
 }
 
 .btn-batch-tryon:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
 }
 
 /* outfit-card-header 内的按钮组 */
 .outfit-card-actions {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   align-items: center;
 }
 

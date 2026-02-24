@@ -64,7 +64,6 @@ class ConversationManager:
     
     # SQLAlchemy的JSON字段需要重新赋值才能触发更新
     session.conversation_history = history[:]
-    # 关键修复：显式标记JSON字段已修改
     flag_modified(session, 'conversation_history')
     session.updated_at = datetime.now()
     

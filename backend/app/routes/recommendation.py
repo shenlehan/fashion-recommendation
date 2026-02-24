@@ -229,7 +229,7 @@ def get_outfit_recommendations(
     preferences=preferences if preferences else None
   )
   
-  # ⚠️ 修改：不自动保存推荐到会话历史，等用户选择后再保存
+  # 不自动保存推荐到会话历史，等用户选择后再保存
   # 用户需要调用 /select-outfit 接口来选择某组推荐
 
   return {

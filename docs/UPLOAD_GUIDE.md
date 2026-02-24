@@ -249,4 +249,4 @@ find /root/autodl-tmp/fashion-recommendation -name "*.sh" -exec chmod +x {} \;
 
 ---
 
-现在你可以使用任意一种方法上传代码,然后运行 `bash autodl_install.sh` 安装环境! 🚀
+现在你可以使用任意一种方法上传代码,然后运行 `bash autodl_install.sh` 安装环境!
